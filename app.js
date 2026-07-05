@@ -10,12 +10,29 @@
     fiis: { label: "FIIs", emoji: "🏢", color: "#22C55E", type: "stock" },
     prev_pessoal: { label: "Previdência Privada Pessoal", emoji: "🛡️", color: "#A855F7", type: "manual" },
     renda_fixa: { label: "Renda Fixa", emoji: "🏦", color: "#F59E0B", type: "manual" },
-    prev_corporativa: { label: "Previdência Privada Corporativa", emoji: "💼", color: "#EC4899", type: "manual" },
+    prev_corporativa: { label: "Previdência Privada Corporativa", emoji: "💼", color: "#EC4899", type: "corp_pension" },
     bitcoin: { label: "Bitcoin (HardWallet)", emoji: "₿", color: "#F7931A", type: "crypto", fixedCoin: "bitcoin" },
-    ilp: { label: "ILP (Investimento Longo Prazo)", emoji: "🌱", color: "#14B8A6", type: "manual" },
+    ilp: { label: "ILP (Investimento Longo Prazo)", emoji: "🌱", color: "#14B8A6", type: "stock" },
     fgts: { label: "FGTS", emoji: "🔒", color: "#EAB308", type: "fgts" },
     outras_cryptos: { label: "Outras Cryptos", emoji: "🪙", color: "#8B5CF6", type: "crypto" },
   };
+
+  // Cronograma de vesting da previdência corporativa: % do valor atual da empresa que conta no patrimônio
+  const VESTING_SCHEDULE = [
+    { year: 2027, month: 9, pct: 0.6 },  // outubro/2027
+    { year: 2028, month: 9, pct: 0.7 },
+    { year: 2029, month: 9, pct: 0.8 },
+    { year: 2030, month: 9, pct: 0.9 },
+    { year: 2031, month: 9, pct: 1.0 },
+  ];
+  function vestingPercent(date = new Date()) {
+    let pct = 0.5;
+    for (const s of VESTING_SCHEDULE) {
+      const milestone = new Date(s.year, s.month, 1);
+      if (date >= milestone) pct = s.pct;
+    }
+    return pct;
+  }
 
   const DEBT_CATEGORIES = {
     cartao_credito: { label: "Cartões de Crédito", emoji: "💳" },
@@ -26,8 +43,12 @@
 
   const uid = () => Math.random().toString(36).slice(2, 10);
 
-  const fmt = (v) => (Number(v) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const fmt = (v) => {
+    if (settings.hideValues) return "R$ ••••";
+    return (Number(v) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  };
   const fmtCompact = (v) => {
+    if (settings.hideValues) return "R$ •••";
     const n = Number(v) || 0;
     const sign = n < 0 ? "-" : "";
     const abs = Math.abs(n);
@@ -43,7 +64,7 @@
 
   // ---------- state ----------
   let state = { investments: [], debts: [], properties: [], receivables: [] };
-  let settings = { theme: "dark", brapiToken: "", autoRefresh: false };
+  let settings = { theme: "dark", brapiToken: "", autoRefresh: false, hideValues: false };
 
   function loadState() {
     try {
@@ -109,6 +130,8 @@
       sub.textContent = `${c.rentabilidade >= 0 ? "+" : ""}${c.rentabilidade.toFixed(1)}% de rentabilidade sobre o aplicado`;
       sub.className = "sub " + (c.rentabilidade >= 0 ? "pos" : "neg");
     } else { sub.textContent = ""; sub.className = "sub"; }
+
+    document.getElementById("heroCard").classList.toggle("debt-heavy", c.totalDividas > c.totalAtivos);
 
     document.getElementById("totalAtivos").textContent = fmtCompact(c.totalAtivos);
     document.getElementById("totalDividas").textContent = fmtCompact(c.totalDividas);
@@ -191,8 +214,15 @@
       return parts.join(" · ");
     }
     if (cat.type === "fgts") {
-      const parts = [`Total: ${fmt(item.valorTotal)}`];
+      const parts = [`Total do contrato: ${fmt(item.valorTotal)}`];
       if (item.valorTotal) parts.push(`Multa (40%): ${fmt((Number(item.valorTotal) || 0) * 0.4)}`);
+      return parts.join(" · ");
+    }
+    if (cat.type === "corp_pension") {
+      const parts = [];
+      if (item.nomeEmpresa) parts.push(`Empresa: ${item.nomeEmpresa}`);
+      parts.push(`Colaborador ${fmt(item.valorAtualColaborador)}`);
+      parts.push(`Empresa ${fmt(item.valorAtualEmpresa)} (${Math.round((item.vestingPercentApplied || 0) * 100)}% vestido)`);
       return parts.join(" · ");
     }
     if (item.valorInvestido) return `Aplicado: ${fmt(item.valorInvestido)}`;
@@ -212,7 +242,7 @@
         : items.map((item) => {
             const investido = Number(item.valorInvestido) || 0;
             const atual = Number(item.valorAtual) || 0;
-            const delta = (cat.type !== "fgts" && investido > 0) ? ((atual - investido) / investido) * 100 : null;
+            const delta = (cat.type !== "fgts" && cat.type !== "corp_pension" && investido > 0) ? ((atual - investido) / investido) * 100 : null;
             return `<div class="row">
               <div class="row-main">
                 <div class="row-name">${escapeHtml(item.nome || "Sem nome")}</div>
@@ -349,7 +379,7 @@
 
   function openInvestmentModal(categoria, item) {
     const cat = INVESTMENT_CATEGORIES[categoria];
-    const isNew = !item.nome;
+    const isNew = cat.type === "corp_pension" ? (!item.nomeColaborador && !item.nomeEmpresa) : !item.nome;
     modalTitle.textContent = isNew ? `Novo em ${cat.label}` : "Editar investimento";
 
     let fieldsHtml = "";
@@ -373,13 +403,28 @@
         </div>
         <div class="field-hint">A cotação atual é buscada ao tocar em ↻ na Visão geral.</div>`;
     } else if (cat.type === "fgts") {
+      const multaPreview = fmt((Number(item.valorTotal) || 0) * 0.4);
       fieldsHtml = `
         <div class="field"><label>Nome</label><input type="text" name="nome" value="${escapeHtml(item.nome || "FGTS")}" placeholder="FGTS" required /></div>
         <div class="field-row">
-          <div class="field"><label>Valor total</label><input type="number" step="0.01" min="0" name="valorTotal" value="${item.valorTotal ?? ""}" placeholder="0,00" required /></div>
-          <div class="field"><label>Saldo disponível</label><input type="number" step="0.01" min="0" name="saldoDisponivel" value="${item.saldoDisponivel ?? ""}" placeholder="0,00" required /></div>
+          <div class="field"><label>Valor total do contrato</label><input type="number" step="0.01" min="0" name="valorTotal" value="${item.valorTotal ?? ""}" placeholder="0,00" required /></div>
+          <div class="field"><label>Valor atual</label><input type="number" step="0.01" min="0" name="valorAtual" value="${item.valorAtual ?? ""}" placeholder="0,00" required /></div>
         </div>
-        <div class="field-hint">A multa rescisória (40% do total) é calculada automaticamente. O saldo disponível é o que entra no patrimônio líquido.</div>`;
+        <div class="field-hint">Multa rescisória (40% do valor total do contrato): ${multaPreview}, calculada automaticamente e apenas informativa. Só o "valor atual" entra no cálculo do patrimônio.</div>`;
+    } else if (cat.type === "corp_pension") {
+      const vp = Math.round(vestingPercent() * 100);
+      fieldsHtml = `
+        <div class="field"><label>Nome do investimento (Colaborador)</label><input type="text" name="nomeColaborador" value="${escapeHtml(item.nomeColaborador || "")}" placeholder="Ex: Plano PGBL - parte colaborador" required /></div>
+        <div class="field-row">
+          <div class="field"><label>Valor aplicado (R$)</label><input type="number" step="0.01" min="0" name="valorAplicadoColaborador" value="${item.valorAplicadoColaborador ?? ""}" placeholder="0,00" /></div>
+          <div class="field"><label>Valor atual (R$)</label><input type="number" step="0.01" min="0" name="valorAtualColaborador" value="${item.valorAtualColaborador ?? ""}" placeholder="0,00" required /></div>
+        </div>
+        <div class="field" style="margin-top:14px"><label>Nome do investimento (Empresa)</label><input type="text" name="nomeEmpresa" value="${escapeHtml(item.nomeEmpresa || "")}" placeholder="Ex: Plano PGBL - parte empresa" required /></div>
+        <div class="field-row">
+          <div class="field"><label>Valor aplicado (R$)</label><input type="number" step="0.01" min="0" name="valorAplicadoEmpresa" value="${item.valorAplicadoEmpresa ?? ""}" placeholder="0,00" /></div>
+          <div class="field"><label>Valor atual (R$)</label><input type="number" step="0.01" min="0" name="valorAtualEmpresa" value="${item.valorAtualEmpresa ?? ""}" placeholder="0,00" required /></div>
+        </div>
+        <div class="field-hint">A parte da empresa segue vesting crescente (50% até out/2027, +10% a cada outubro até 100% em out/2031). Hoje, ${vp}% do valor atual da empresa conta no patrimônio.</div>`;
     } else {
       fieldsHtml = `
         <div class="field"><label>Nome</label><input type="text" name="nome" value="${escapeHtml(item.nome || "")}" placeholder="Nome do investimento" required /></div>
@@ -417,9 +462,24 @@
       } else if (cat.type === "fgts") {
         updated.nome = fd.get("nome");
         updated.valorTotal = Number(fd.get("valorTotal")) || 0;
-        updated.saldoDisponivel = Number(fd.get("saldoDisponivel")) || 0;
-        updated.valorAtual = updated.saldoDisponivel;
+        updated.valorAtual = Number(fd.get("valorAtual")) || 0;
         updated.valorInvestido = 0;
+      } else if (cat.type === "corp_pension") {
+        const vp = vestingPercent();
+        const valorAplicadoColaborador = Number(fd.get("valorAplicadoColaborador")) || 0;
+        const valorAtualColaborador = Number(fd.get("valorAtualColaborador")) || 0;
+        const valorAplicadoEmpresa = Number(fd.get("valorAplicadoEmpresa")) || 0;
+        const valorAtualEmpresa = Number(fd.get("valorAtualEmpresa")) || 0;
+        updated.nomeColaborador = fd.get("nomeColaborador");
+        updated.nomeEmpresa = fd.get("nomeEmpresa");
+        updated.valorAplicadoColaborador = valorAplicadoColaborador;
+        updated.valorAtualColaborador = valorAtualColaborador;
+        updated.valorAplicadoEmpresa = valorAplicadoEmpresa;
+        updated.valorAtualEmpresa = valorAtualEmpresa;
+        updated.vestingPercentApplied = vp;
+        updated.nome = `${updated.nomeColaborador} + ${updated.nomeEmpresa}`;
+        updated.valorInvestido = valorAplicadoColaborador + valorAplicadoEmpresa;
+        updated.valorAtual = valorAtualColaborador + valorAtualEmpresa * vp;
       } else {
         updated.nome = fd.get("nome");
         updated.valorInvestido = Number(fd.get("valorInvestido")) || 0;
@@ -756,6 +816,7 @@
   function updateToggleAllLabel() {
     const allDetails = document.querySelectorAll("#cards details");
     const anyOpen = Array.from(allDetails).some((d) => d.open);
+    toggleAllBtn.classList.toggle("open", anyOpen);
     toggleAllBtn.title = anyOpen ? "Recolher tudo" : "Expandir tudo";
     toggleAllBtn.setAttribute("aria-label", toggleAllBtn.title);
   }
@@ -767,6 +828,23 @@
   });
   document.getElementById("cards").addEventListener("toggle", updateToggleAllLabel, true);
   updateToggleAllLabel();
+
+  // ---------- ocultar / mostrar valores ----------
+  const EYE_ICON = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>`;
+  const EYE_OFF_ICON = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M3 3l18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+  const toggleValuesBtn = document.getElementById("toggleValuesBtn");
+  function updateEyeIcon() {
+    toggleValuesBtn.innerHTML = settings.hideValues ? EYE_OFF_ICON : EYE_ICON;
+    toggleValuesBtn.title = settings.hideValues ? "Mostrar valores" : "Ocultar valores";
+    toggleValuesBtn.setAttribute("aria-label", toggleValuesBtn.title);
+  }
+  toggleValuesBtn.addEventListener("click", () => {
+    settings.hideValues = !settings.hideValues;
+    saveSettings();
+    updateEyeIcon();
+    render();
+  });
+  updateEyeIcon();
 
   // ---------- recolher / expandir dentro de um grupo específico ----------
   function wireGroupToggle(btnId, containerId) {

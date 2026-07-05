@@ -96,7 +96,9 @@ html, body {
 }
 .gear-btn:active { transform: scale(0.94); }
 .topbar-actions { display: flex; align-items: center; gap: 8px; }
-#toggleAllBtn { font-size: 15px; font-weight: 700; color: var(--text-soft); }
+#toggleAllBtn .chevron { color: var(--text-soft); transition: transform 0.2s ease; }
+#toggleAllBtn.open .chevron { transform: rotate(180deg); }
+#toggleValuesBtn svg { width: 18px; height: 18px; color: var(--text-soft); }
 
 .toast {
   max-width: 720px;
@@ -142,7 +144,14 @@ details.card .card-body { padding: 12px 16px 16px; }
 .card-receivable { border-left: 3px solid #2DD4BF; }
 .card-property { border-left: 3px solid var(--gold); }
 
-.hero-card, #card-dashboard {
+.trailing-icons { display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 52px; flex-shrink: 0; }
+
+.hero-card {
+  border: 2.5px solid var(--accent);
+  transition: border-color 0.3s ease;
+}
+.hero-card.debt-heavy { border-color: var(--rust); }
+#card-dashboard {
   border: 1.5px solid var(--accent);
 }
 
@@ -172,10 +181,9 @@ details.card .card-body { padding: 12px 16px 16px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .mini-toggle-btn {
-  margin-left: auto;
   background: var(--surface-2);
   color: var(--text-soft);
-  border: none;
+  border: 1px solid rgba(34,197,94,0.45);
   width: 26px; height: 26px;
   border-radius: 8px;
   cursor: pointer;
@@ -184,6 +192,7 @@ details.card .card-body { padding: 12px 16px 16px; }
   justify-content: center;
 }
 .mini-toggle-btn:active { transform: scale(0.92); }
+details:not([open]) .mini-toggle-btn { display: none; }
 
 /* hero card */
 .net-worth { text-align: center; margin-bottom: 14px; }
