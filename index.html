@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Patrimônio</title>
+<meta name="description" content="Acompanhe seus investimentos, dívidas e imóveis em um só lugar." />
+
+<meta name="theme-color" content="#0B0E14" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Patrimônio" />
+
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="page">
+  <header class="topbar">
+    <div class="masthead">
+      <div class="eyebrow">Meu patrimônio</div>
+      <h1 class="display">Patrimônio</h1>
+    </div>
+    <button class="gear-btn" id="openSettings" aria-label="Configurações">⚙️</button>
+  </header>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <main class="container" id="cards">
+    <!-- Card: Patrimônio líquido -->
+    <section class="card hero-card">
+      <div class="net-worth">
+        <div class="eyebrow">Patrimônio líquido</div>
+        <div class="value display" id="netWorthValue">R$ 0,00</div>
+        <div class="sub" id="netWorthSub"></div>
+      </div>
+      <div class="hero-row">
+        <div class="hero-side">
+          <div class="hero-label">Ativos</div>
+          <div class="hero-value green mono" id="totalAtivos">R$ 0,00</div>
+        </div>
+        <div class="hero-side right">
+          <div class="hero-label">Dívidas</div>
+          <div class="hero-value rust mono" id="totalDividas">R$ 0,00</div>
+        </div>
+      </div>
+      <div class="beam">
+        <div class="beam-half left"><div class="beam-fill rust" id="beamRust"></div></div>
+        <div class="beam-half"><div class="beam-fill green" id="beamGreen"></div></div>
+      </div>
+    </section>
+
+    <!-- Card: Dashboard -->
+    <details class="card collapsible" id="card-dashboard" open>
+      <summary>
+        <span class="card-title">Visão geral</span>
+        <button class="refresh-btn" id="refreshQuotes" type="button" title="Atualizar cotações">↻</button>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </summary>
+      <div class="card-body">
+        <div class="chart-block">
+          <div class="chart-label">Alocação dos investimentos</div>
+          <div class="donut-wrap">
+            <canvas id="donutChart" width="180" height="180"></canvas>
+            <div class="donut-center">
+              <div class="donut-center-value mono" id="donutCenterValue">R$ 0</div>
+              <div class="donut-center-label">investido</div>
+            </div>
+          </div>
+          <div class="legend" id="donutLegend"></div>
+        </div>
+        <div class="quote-status" id="quoteStatus"></div>
+      </div>
+    </details>
+
+    <!-- Blocos por categoria de investimento (gerados via JS) -->
+    <div id="investmentCards"></div>
+
+    <!-- Card: Pessoas que me devem -->
+    <details class="card collapsible card-receivable" id="card-receivables" open>
+      <summary>
+        <span class="card-title">💰 Pessoas que me devem</span>
+        <span class="card-total mono" id="receivablesCardTotal"></span>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </summary>
+      <div class="card-body">
+        <div id="receivablesList"></div>
+        <button class="add-btn" data-action="add-receivable">+ Adicionar pessoa</button>
+      </div>
+    </details>
+
+    <!-- Card: Imóveis -->
+    <details class="card collapsible card-property" id="card-properties" open>
+      <summary>
+        <span class="card-title">🏠 Imóveis</span>
+        <span class="card-total mono" id="propertiesCardTotal"></span>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </summary>
+      <div class="card-body">
+        <div id="propertiesList"></div>
+        <button class="add-btn" data-action="add-property">+ Adicionar imóvel</button>
+      </div>
+    </details>
+
+    <!-- Blocos por categoria de dívida (gerados via JS) -->
+    <div id="debtCards"></div>
+  </main>
+
+  <footer class="footnote">Seus dados ficam salvos só neste dispositivo.</footer>
+</div>
+
+<!-- Modal: item (investimento / dívida / imóvel) -->
+<div class="overlay" id="overlay" hidden>
+  <div class="modal" id="modal">
+    <div class="modal-head">
+      <h3 class="display" id="modalTitle">Novo lançamento</h3>
+      <button class="icon-btn" data-action="close-modal" aria-label="Fechar">✕</button>
+    </div>
+    <form id="itemForm"></form>
+  </div>
+</div>
+
+<!-- Modal: configurações -->
+<div class="overlay" id="settingsOverlay" hidden>
+  <div class="modal" id="settingsModal">
+    <div class="modal-head">
+      <h3 class="display">Configurações</h3>
+      <button class="icon-btn" data-action="close-settings" aria-label="Fechar">✕</button>
+    </div>
+
+    <div class="settings-group">
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Tema</div>
+          <div class="settings-hint">Escuro ou claro</div>
+        </div>
+        <div class="theme-toggle" id="themeToggle">
+          <button type="button" data-theme="dark" class="theme-opt">🌙 Escuro</button>
+          <button type="button" data-theme="light" class="theme-opt">☀️ Claro</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <div class="settings-label">Cotações em tempo real</div>
+      <div class="field">
+        <label>Token da brapi.dev (opcional, para ações/FIIs além dos tickers de teste)</label>
+        <input type="text" id="brapiToken" placeholder="Cole seu token gratuito aqui" />
+      </div>
+      <div class="settings-hint">
+        Crie um token grátis em <span class="mono">brapi.dev/dashboard</span>. Sem token, só funcionam PETR4, VALE3, MGLU3 e ITUB4.
+      </div>
+      <div class="settings-row" style="margin-top:10px">
+        <div>
+          <div class="settings-label">Atualizar automaticamente</div>
+          <div class="settings-hint">Ao abrir o app</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="autoRefreshToggle" />
+          <span class="switch-track"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <div class="settings-label">Meus dados</div>
+      <div class="settings-actions">
+        <button class="btn btn-secondary" id="exportData" type="button">Exportar backup</button>
+        <button class="btn btn-secondary" id="importDataBtn" type="button">Importar backup</button>
+      </div>
+      <input type="file" id="importDataInput" accept="application/json" hidden />
+      <button class="btn btn-danger" id="resetData" type="button" style="margin-top:10px">Apagar todos os dados</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
