@@ -30,7 +30,12 @@
       <div class="eyebrow">Meu patrimônio</div>
       <h1 class="display">Patrimônio</h1>
     </div>
-    <button class="gear-btn" id="openSettings" aria-label="Configurações">⚙️</button>
+    <div class="topbar-actions">
+      <button class="gear-btn" id="toggleAllBtn" title="Recolher tudo" aria-label="Recolher tudo">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 15l5 5 5-5M7 9l5-5 5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="gear-btn" id="openSettings" aria-label="Configurações">⚙️</button>
+    </div>
   </header>
 
   <div id="toast" class="toast" hidden></div>
@@ -82,8 +87,35 @@
       </div>
     </details>
 
-    <!-- Blocos por categoria de investimento (gerados via JS) -->
-    <div id="investmentCards"></div>
+    <!-- Grupo: Investimentos -->
+    <details class="card collapsible card-investment" id="card-investments-group">
+      <summary>
+        <span class="card-title">📊 Investimentos</span>
+        <span class="card-total mono" id="investmentsGroupTotal"></span>
+        <button class="mini-toggle-btn" id="toggleInvestmentsSub" type="button" title="Recolher categorias">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M7 15l5 5 5-5M7 9l5-5 5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </summary>
+      <div class="card-body">
+        <div id="investmentCards"></div>
+      </div>
+    </details>
+
+    <!-- Grupo: Dívidas -->
+    <details class="card collapsible card-debt" id="card-debts-group">
+      <summary>
+        <span class="card-title">💳 Dívidas</span>
+        <span class="card-total mono" id="debtsGroupTotal"></span>
+        <button class="mini-toggle-btn" id="toggleDebtsSub" type="button" title="Recolher categorias">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M7 15l5 5 5-5M7 9l5-5 5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </summary>
+      <div class="card-body">
+        <div id="debtCards"></div>
+      </div>
+    </details>
 
     <!-- Card: Pessoas que me devem -->
     <details class="card collapsible card-receivable" id="card-receivables">
@@ -110,9 +142,6 @@
         <button class="add-btn" data-action="add-property">+ Adicionar imóvel</button>
       </div>
     </details>
-
-    <!-- Blocos por categoria de dívida (gerados via JS) -->
-    <div id="debtCards"></div>
   </main>
 
   <footer class="footnote">Seus dados ficam salvos só neste dispositivo.</footer>

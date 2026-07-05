@@ -32,7 +32,7 @@
     const sign = n < 0 ? "-" : "";
     const abs = Math.abs(n);
     if (abs >= 1_000_000) return `${sign}R$ ${(abs / 1_000_000).toFixed(1)}mi`;
-    if (abs >= 1_000) return `${sign}R$ ${(abs / 1_000).toFixed(1)}mil`;
+    if (abs >= 1_000) return `${sign}R$ ${(abs / 1_000).toFixed(1)}k`;
     return fmt(n);
   };
   const escapeHtml = (str) => {
@@ -122,6 +122,13 @@
     renderReceivables();
     renderProperties();
     renderDebtCards();
+
+    document.getElementById("investmentsGroupTotal").textContent = fmt(c.totalInvestido);
+    document.getElementById("debtsGroupTotal").textContent = fmt(c.totalDividas);
+
+    if (typeof updateToggleAllLabel === "function") updateToggleAllLabel();
+    if (typeof updateInvestmentsGroupToggle === "function") updateInvestmentsGroupToggle();
+    if (typeof updateDebtsGroupToggle === "function") updateDebtsGroupToggle();
   }
 
   function renderDonut() {
@@ -222,23 +229,23 @@
             </div>`;
           }).join("");
 
-      return `<details class="card collapsible card-investment" data-collapse-id="inv-${key}" ${isOpen ? "open" : ""}>
+      return `<details class="sub-block" data-collapse-id="inv-${key}" ${isOpen ? "open" : ""}>
         <summary>
           <span class="cat-icon-head">
             <span class="cat-icon" style="background:${cat.color}22;color:${cat.color}">${cat.emoji}</span>
             <span class="card-title">${cat.label}</span>
           </span>
           <span class="card-total mono">${fmt(catTotal)}</span>
-          <svg class="chevron" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="chevron" width="14" height="14" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </summary>
-        <div class="card-body">
+        <div class="sub-body">
           ${rows}
           <button class="add-btn" data-action="add-investment" data-categoria="${key}">+ Adicionar em ${cat.label}</button>
         </div>
       </details>`;
     }).join("");
 
-    wrap.querySelectorAll("details.collapsible").forEach((d) => {
+    wrap.querySelectorAll("details.collapsible, details.sub-block").forEach((d) => {
       d.addEventListener("toggle", () => setCollapse(d.dataset.collapseId, d.open));
     });
   }
@@ -255,7 +262,7 @@
             <div class="row-meta">${[escapeHtml(r.observacao || ""), r.dataPrevista ? `previsto p/ ${escapeHtml(r.dataPrevista)}` : ""].filter(Boolean).join(" · ")}</div>
           </div>
           <div class="row-value">
-            <div class="amount mono" style="color:#38BDF8">${fmt(r.valor)}</div>
+            <div class="amount mono" style="color:#2DD4BF">${fmt(r.valor)}</div>
           </div>
           <div class="row-actions">
             <button class="icon-btn" data-action="edit-receivable" data-id="${r.id}" aria-label="Editar">✎</button>
@@ -314,23 +321,23 @@
             </div>`;
           }).join("");
 
-      return `<details class="card collapsible card-debt" data-collapse-id="debt-${key}" ${isOpen ? "open" : ""}>
+      return `<details class="sub-block" data-collapse-id="debt-${key}" ${isOpen ? "open" : ""}>
         <summary>
           <span class="cat-icon-head">
             <span class="cat-icon" style="background:var(--rust-soft);color:var(--rust)">${cat.emoji}</span>
             <span class="card-title">${cat.label}</span>
           </span>
           <span class="card-total mono">${fmt(catTotal)}</span>
-          <svg class="chevron" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="chevron" width="14" height="14" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </summary>
-        <div class="card-body">
+        <div class="sub-body">
           ${rows}
           <button class="add-btn" data-action="add-debt" data-categoria="${key}">+ Adicionar em ${cat.label}</button>
         </div>
       </details>`;
     }).join("");
 
-    wrap.querySelectorAll("details.collapsible").forEach((d) => {
+    wrap.querySelectorAll("details.collapsible, details.sub-block").forEach((d) => {
       d.addEventListener("toggle", () => setCollapse(d.dataset.collapseId, d.open));
     });
   }
@@ -672,7 +679,10 @@
   });
 
   document.getElementById("openSettings").addEventListener("click", openSettings);
-  document.getElementById("refreshQuotes").addEventListener("click", () => refreshAllQuotes().catch(() => showToast("Não consegui atualizar as cotações agora.")));
+  document.getElementById("refreshQuotes").addEventListener("click", (e) => {
+    e.preventDefault();
+    refreshAllQuotes().catch(() => showToast("Não consegui atualizar as cotações agora."));
+  });
 
   document.getElementById("themeToggle").addEventListener("click", (e) => {
     const btn = e.target.closest(".theme-opt");
@@ -725,7 +735,7 @@
     }
   });
 
-  ["card-receivables", "card-properties"].forEach((id) => {
+  ["card-receivables", "card-properties", "card-investments-group", "card-debts-group"].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
     const collapse = getCollapse();
@@ -740,6 +750,47 @@
     if (collapse[id] === false) el.open = false;
     el.addEventListener("toggle", () => setCollapse(id, el.open));
   })();
+
+  // ---------- recolher / expandir tudo ----------
+  const toggleAllBtn = document.getElementById("toggleAllBtn");
+  function updateToggleAllLabel() {
+    const allDetails = document.querySelectorAll("#cards details");
+    const anyOpen = Array.from(allDetails).some((d) => d.open);
+    toggleAllBtn.title = anyOpen ? "Recolher tudo" : "Expandir tudo";
+    toggleAllBtn.setAttribute("aria-label", toggleAllBtn.title);
+  }
+  toggleAllBtn.addEventListener("click", () => {
+    const allDetails = document.querySelectorAll("#cards details");
+    const anyOpen = Array.from(allDetails).some((d) => d.open);
+    allDetails.forEach((d) => { d.open = !anyOpen; });
+    updateToggleAllLabel();
+  });
+  document.getElementById("cards").addEventListener("toggle", updateToggleAllLabel, true);
+  updateToggleAllLabel();
+
+  // ---------- recolher / expandir dentro de um grupo específico ----------
+  function wireGroupToggle(btnId, containerId) {
+    const btn = document.getElementById(btnId);
+    const container = document.getElementById(containerId);
+    function update() {
+      const subs = container.querySelectorAll("details.sub-block");
+      const anyOpen = Array.from(subs).some((d) => d.open);
+      btn.title = anyOpen ? "Recolher categorias" : "Expandir categorias";
+    }
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const subs = container.querySelectorAll("details.sub-block");
+      const anyOpen = Array.from(subs).some((d) => d.open);
+      subs.forEach((d) => { d.open = !anyOpen; });
+      update();
+    });
+    container.addEventListener("toggle", update, true);
+    update();
+    return update;
+  }
+  const updateInvestmentsGroupToggle = wireGroupToggle("toggleInvestmentsSub", "investmentCards");
+  const updateDebtsGroupToggle = wireGroupToggle("toggleDebtsSub", "debtCards");
 
   // ---------- init ----------
   loadState();

@@ -95,6 +95,8 @@ html, body {
   display: flex; align-items: center; justify-content: center;
 }
 .gear-btn:active { transform: scale(0.94); }
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+#toggleAllBtn { font-size: 15px; font-weight: 700; color: var(--text-soft); }
 
 .toast {
   max-width: 720px;
@@ -128,7 +130,7 @@ details.card > summary {
 }
 details.card > summary::-webkit-details-marker { display: none; }
 .card-title { font-size: 14px; font-weight: 700; display:flex; align-items:center; gap:7px; }
-.card-total { margin-left: auto; font-size: 12.5px; color: var(--text-soft); }
+.card-total { margin-left: auto; font-size: 12.5px; color: var(--text-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .chevron { color: var(--text-soft); transition: transform 0.2s ease; flex-shrink: 0; }
 details[open] > summary .chevron { transform: rotate(180deg); }
 details.card > summary { border-bottom: 1px solid transparent; }
@@ -136,9 +138,24 @@ details[open] > summary { border-bottom: 1px solid var(--border); }
 details.card .card-body { padding: 12px 16px 16px; }
 
 .card-investment { border-left: 3px solid var(--accent); }
-.card-receivable { border-left: 3px solid #38BDF8; }
-.card-property { border-left: 3px solid var(--green); }
 .card-debt { border-left: 3px solid var(--rust); }
+.card-receivable { border-left: 3px solid #2DD4BF; }
+.card-property { border-left: 3px solid var(--gold); }
+
+.hero-card, #card-dashboard {
+  border: 1.5px solid var(--accent);
+}
+
+/* sub-blocks nested inside a group (Investimentos / Dívidas) */
+.sub-block { border-top: 1px solid var(--border); }
+.sub-block:first-child { border-top: none; }
+.sub-block > summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 7px;
+  padding: 10px 2px; user-select: none;
+}
+.sub-block > summary::-webkit-details-marker { display: none; }
+.sub-block[open] > summary { padding-bottom: 8px; }
+.sub-block .sub-body { padding: 2px 2px 12px 29px; }
 
 .refresh-btn {
   margin-left: auto;
@@ -154,13 +171,27 @@ details.card .card-body { padding: 12px 16px 16px; }
 .refresh-btn.spinning { animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.mini-toggle-btn {
+  margin-left: auto;
+  background: var(--surface-2);
+  color: var(--text-soft);
+  border: none;
+  width: 26px; height: 26px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mini-toggle-btn:active { transform: scale(0.92); }
+
 /* hero card */
 .net-worth { text-align: center; margin-bottom: 14px; }
 .net-worth .eyebrow {
   text-transform: uppercase; letter-spacing: 0.14em; font-size: 10px;
   color: var(--text-soft); margin-bottom: 5px; font-weight: 600;
 }
-.net-worth .value { font-size: 32px; font-weight: 800; line-height: 1.1; }
+.net-worth .value { font-size: 32px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .net-worth .sub { font-size: 12px; color: var(--text-soft); margin-top: 5px; }
 .net-worth .sub.pos { color: var(--green); }
 .net-worth .sub.neg { color: var(--rust); }
@@ -175,7 +206,7 @@ details.card .card-body { padding: 12px 16px 16px; }
   font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
   color: var(--text-soft); margin-bottom: 3px; font-weight: 600;
 }
-.hero-value { font-size: 17px; font-weight: 700; }
+.hero-value { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .hero-value.green { color: var(--green); }
 .hero-value.rust { color: var(--rust); }
 
@@ -219,14 +250,14 @@ details.card .card-body { padding: 12px 16px 16px; }
 .row { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-top: 1px solid var(--border); }
 .row:first-of-type { border-top: none; }
 .row-main { flex: 1; min-width: 0; }
-.row-name { font-size: 13.5px; font-weight: 600; }
-.row-meta { font-size: 11.5px; color: var(--text-soft); margin-top: 1px; }
-.row-value { text-align: right; }
-.row-value .amount { font-size: 13.5px; font-weight: 700; }
-.row-value .delta { font-size: 11px; display: flex; align-items: center; gap: 2px; justify-content: flex-end; margin-top: 1px; font-weight: 600; }
+.row-name { font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-meta { font-size: 11.5px; color: var(--text-soft); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-value { text-align: right; flex-shrink: 0; white-space: nowrap; }
+.row-value .amount { font-size: 13.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.row-value .delta { font-size: 11px; display: flex; align-items: center; gap: 2px; justify-content: flex-end; margin-top: 1px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .row-value .delta.pos { color: var(--green); }
 .row-value .delta.neg { color: var(--rust); }
-.row-actions { display: flex; gap: 0px; }
+.row-actions { display: flex; gap: 0px; flex-shrink: 0; }
 
 .icon-btn { border: none; background: transparent; color: var(--text-soft); padding: 5px; border-radius: 7px; cursor: pointer; display: flex; font-size: 13px; }
 .icon-btn:hover { background: var(--surface-2); color: var(--text); }
