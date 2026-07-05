@@ -128,13 +128,13 @@
     const canvas = document.getElementById("donutChart");
     const ctx = canvas.getContext("2d");
     const dpr = window.devicePixelRatio || 1;
-    const size = 180;
+    const size = 150;
     canvas.width = size * dpr; canvas.height = size * dpr;
     canvas.style.width = size + "px"; canvas.style.height = size + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, size, size);
 
-    const cx = size / 2, cy = size / 2, rOuter = 78, rInner = 52;
+    const cx = size / 2, cy = size / 2, rOuter = 65, rInner = 43;
     const totals = Object.keys(INVESTMENT_CATEGORIES).map((key) => ({
       key,
       value: state.investments.filter((i) => i.categoria === key).reduce((s, i) => s + (Number(i.valorAtual) || 0), 0),
@@ -198,7 +198,7 @@
     wrap.innerHTML = Object.entries(INVESTMENT_CATEGORIES).map(([key, cat]) => {
       const items = state.investments.filter((i) => i.categoria === key);
       const catTotal = items.reduce((s, i) => s + (Number(i.valorAtual) || 0), 0);
-      const isOpen = collapse[`inv-${key}`] !== false;
+      const isOpen = collapse[`inv-${key}`] === true;
 
       const rows = items.length === 0
         ? `<div class="empty-row">Nenhum lançamento ainda.</div>`
@@ -291,7 +291,7 @@
     wrap.innerHTML = Object.entries(DEBT_CATEGORIES).map(([key, cat]) => {
       const items = state.debts.filter((d) => d.categoria === key);
       const catTotal = items.reduce((s, d) => s + (Number(d.valorTotal) || 0), 0);
-      const isOpen = collapse[`debt-${key}`] !== false;
+      const isOpen = collapse[`debt-${key}`] === true;
 
       const rows = items.length === 0
         ? `<div class="empty-row">Nenhum lançamento ainda.</div>`
@@ -725,13 +725,21 @@
     }
   });
 
-  ["card-dashboard", "card-receivables", "card-properties"].forEach((id) => {
+  ["card-receivables", "card-properties"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const collapse = getCollapse();
+    el.open = collapse[id] === true;
+    el.addEventListener("toggle", () => setCollapse(id, el.open));
+  });
+  (() => {
+    const id = "card-dashboard";
     const el = document.getElementById(id);
     if (!el) return;
     const collapse = getCollapse();
     if (collapse[id] === false) el.open = false;
     el.addEventListener("toggle", () => setCollapse(id, el.open));
-  });
+  })();
 
   // ---------- init ----------
   loadState();
