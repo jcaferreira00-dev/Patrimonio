@@ -1,8 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import {
   getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
@@ -11,6 +11,7 @@ import {
   doc,
   setDoc,
   onSnapshot,
+  enableIndexedDbPersistence,
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -24,6 +25,13 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
+
+// Permite o app funcionar offline e sincronizar quando voltar a internet
+try {
+  enableIndexedDbPersistence(db);
+} catch (e) {
+  // Ignora: acontece se o site estiver aberto em mais de uma aba, por exemplo
+}
 
 (() => {
   "use strict";
@@ -160,16 +168,16 @@ const db = getFirestore(firebaseApp);
 
   function updateAccountUI() {
     const info = document.getElementById("accountInfo");
-    const signInBtn = document.getElementById("googleSignInBtn");
+    const authFields = document.getElementById("authFields");
     const signOutBtn = document.getElementById("signOutBtn");
-    if (!info || !signInBtn || !signOutBtn) return;
+    if (!info || !authFields || !signOutBtn) return;
     if (currentUser) {
       info.textContent = `Conectado como ${currentUser.email}`;
-      signInBtn.hidden = true;
+      authFields.hidden = true;
       signOutBtn.hidden = false;
     } else {
       info.textContent = "Não conectado — seus dados ficam só neste dispositivo.";
-      signInBtn.hidden = false;
+      authFields.hidden = false;
       signOutBtn.hidden = true;
     }
   }
@@ -193,7 +201,8 @@ const db = getFirestore(firebaseApp);
       const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
       updateSyncStatus(`Sincronizado às ${now}.`);
     } catch (e) {
-      updateSyncStatus("Não consegui sincronizar agora. Verifique sua conexão.");
+      console.error("Erro ao sincronizar com a nuvem:", e);
+      updateSyncStatus(`Não consegui sincronizar agora (${e.code || e.message || "erro desconhecido"}).`);
     }
   }
 
@@ -226,8 +235,9 @@ const db = getFirestore(firebaseApp);
         applyingRemoteUpdate = false;
         hasSyncedOnce = true;
       },
-      () => {
-        updateSyncStatus("Não consegui sincronizar agora. Verifique sua conexão.");
+      (e) => {
+        console.error("Erro no listener de sincronização:", e);
+        updateSyncStatus(`Não consegui sincronizar agora (${e.code || e.message || "erro desconhecido"}).`);
       }
     );
   }
@@ -981,12 +991,40 @@ const db = getFirestore(firebaseApp);
     saveSettings(); applyTheme();
   });
 
-  document.getElementById("googleSignInBtn").addEventListener("click", async () => {
+  function authErrorMessage(e) {
+    const map = {
+      "auth/invalid-email": "E-mail inválido.",
+      "auth/missing-password": "Digite uma senha.",
+      "auth/weak-password": "A senha precisa ter pelo menos 6 caracteres.",
+      "auth/email-already-in-use": "Já existe uma conta com esse e-mail. Tente Entrar em vez de Criar conta.",
+      "auth/invalid-credential": "E-mail ou senha incorretos.",
+      "auth/wrong-password": "E-mail ou senha incorretos.",
+      "auth/user-not-found": "Não existe conta com esse e-mail. Use Criar conta primeiro.",
+      "auth/too-many-requests": "Muitas tentativas. Espere um pouco e tente de novo.",
+    };
+    return map[e.code] || e.code || e.message || "erro desconhecido";
+  }
+
+  document.getElementById("signUpBtn").addEventListener("click", async () => {
+    const email = document.getElementById("authEmail").value.trim();
+    const password = document.getElementById("authPassword").value;
+    if (!email || !password) { showToast("Preencha e-mail e senha."); return; }
     try {
-      await signInWithPopup(auth, new GoogleAuthProvider());
+      await createUserWithEmailAndPassword(auth, email, password);
     } catch (e) {
-      console.error("Erro no login com Google:", e);
-      showToast(`Não consegui entrar com Google agora (${e.code || e.message || "erro desconhecido"}).`, 8000);
+      console.error("Erro ao criar conta:", e);
+      showToast(`Não consegui criar a conta (${authErrorMessage(e)}).`, 8000);
+    }
+  });
+  document.getElementById("signInBtn").addEventListener("click", async () => {
+    const email = document.getElementById("authEmail").value.trim();
+    const password = document.getElementById("authPassword").value;
+    if (!email || !password) { showToast("Preencha e-mail e senha."); return; }
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (e) {
+      console.error("Erro no login:", e);
+      showToast(`Não consegui entrar (${authErrorMessage(e)}).`, 8000);
     }
   });
   document.getElementById("signOutBtn").addEventListener("click", async () => {
@@ -995,7 +1033,7 @@ const db = getFirestore(firebaseApp);
       showToast("Você saiu da conta. Os dados continuam salvos neste dispositivo.");
     } catch (e) {
       console.error("Erro ao sair da conta:", e);
-      showToast(`Não consegui sair da conta agora (${e.code || e.message || "erro desconhecido"}).`, 8000);
+      showToast(`Não consegui sair da conta agora (${authErrorMessage(e)}).`, 8000);
     }
   });
 

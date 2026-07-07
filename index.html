@@ -178,10 +178,26 @@
     <div class="settings-group">
       <div class="settings-label">Conta e sincronização</div>
       <div class="settings-hint" id="accountInfo">Não conectado — seus dados ficam só neste dispositivo.</div>
-      <div class="settings-actions" style="margin-top:8px">
-        <button class="btn btn-secondary" id="googleSignInBtn" type="button">Entrar com Google</button>
-        <button class="btn btn-secondary" id="signOutBtn" type="button" hidden>Sair da conta</button>
+
+      <div id="authFields">
+        <div class="field" style="margin-top:8px">
+          <label>E-mail</label>
+          <input type="email" id="authEmail" placeholder="seu@email.com" autocomplete="username" />
+        </div>
+        <div class="field">
+          <label>Senha</label>
+          <input type="password" id="authPassword" placeholder="Mínimo 6 caracteres" autocomplete="current-password" />
+        </div>
+        <div class="settings-actions">
+          <button class="btn btn-secondary" id="signInBtn" type="button">Entrar</button>
+          <button class="btn btn-secondary" id="signUpBtn" type="button">Criar conta</button>
+        </div>
+        <div class="settings-hint" style="margin-top:6px">
+          Na primeira vez, use "Criar conta" com um e-mail e senha à sua escolha. Nos outros aparelhos, use "Entrar" com os mesmos dados.
+        </div>
       </div>
+
+      <button class="btn btn-secondary" id="signOutBtn" type="button" hidden style="margin-top:8px">Sair da conta</button>
       <div class="settings-hint" id="syncStatus" style="margin-top:6px"></div>
       <div class="settings-hint" style="margin-top:6px">
         No primeiro login em um novo aparelho, se já houver dados na nuvem, eles substituem os dados salvos localmente.
