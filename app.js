@@ -10,29 +10,12 @@
     fiis: { label: "FIIs", emoji: "🏢", color: "#22C55E", type: "stock" },
     prev_pessoal: { label: "Previdência Privada Pessoal", emoji: "🛡️", color: "#A855F7", type: "manual" },
     renda_fixa: { label: "Renda Fixa", emoji: "🏦", color: "#F59E0B", type: "manual" },
-    prev_corporativa: { label: "Previdência Privada Corporativa", emoji: "💼", color: "#EC4899", type: "corp_pension" },
+    prev_corporativa: { label: "Previdência Privada Corporativa", emoji: "💼", color: "#EC4899", type: "manual" },
     bitcoin: { label: "Bitcoin (HardWallet)", emoji: "₿", color: "#F7931A", type: "crypto", fixedCoin: "bitcoin" },
-    ilp: { label: "ILP (Investimento Longo Prazo)", emoji: "🌱", color: "#14B8A6", type: "stock" },
+    ilp: { label: "ILP (Investimento Longo Prazo)", emoji: "🌱", color: "#14B8A6", type: "manual" },
     fgts: { label: "FGTS", emoji: "🔒", color: "#EAB308", type: "fgts" },
     outras_cryptos: { label: "Outras Cryptos", emoji: "🪙", color: "#8B5CF6", type: "crypto" },
   };
-
-  // Cronograma de vesting da previdência corporativa: % do valor atual da empresa que conta no patrimônio
-  const VESTING_SCHEDULE = [
-    { year: 2027, month: 9, pct: 0.6 },  // outubro/2027
-    { year: 2028, month: 9, pct: 0.7 },
-    { year: 2029, month: 9, pct: 0.8 },
-    { year: 2030, month: 9, pct: 0.9 },
-    { year: 2031, month: 9, pct: 1.0 },
-  ];
-  function vestingPercent(date = new Date()) {
-    let pct = 0.5;
-    for (const s of VESTING_SCHEDULE) {
-      const milestone = new Date(s.year, s.month, 1);
-      if (date >= milestone) pct = s.pct;
-    }
-    return pct;
-  }
 
   const DEBT_CATEGORIES = {
     cartao_credito: { label: "Cartões de Crédito", emoji: "💳" },
@@ -43,17 +26,13 @@
 
   const uid = () => Math.random().toString(36).slice(2, 10);
 
-  const fmt = (v) => {
-    if (settings.hideValues) return "R$ ••••";
-    return (Number(v) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  };
+  const fmt = (v) => (Number(v) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const fmtCompact = (v) => {
-    if (settings.hideValues) return "R$ •••";
     const n = Number(v) || 0;
     const sign = n < 0 ? "-" : "";
     const abs = Math.abs(n);
     if (abs >= 1_000_000) return `${sign}R$ ${(abs / 1_000_000).toFixed(1)}mi`;
-    if (abs >= 1_000) return `${sign}R$ ${(abs / 1_000).toFixed(1)}k`;
+    if (abs >= 1_000) return `${sign}R$ ${(abs / 1_000).toFixed(1)}mil`;
     return fmt(n);
   };
   const escapeHtml = (str) => {
@@ -64,7 +43,16 @@
 
   // ---------- state ----------
   let state = { investments: [], debts: [], properties: [], receivables: [] };
-  let settings = { theme: "dark", brapiToken: "", autoRefresh: false, hideValues: false };
+  let settings = {
+    theme: "dark",
+    brapiToken: "", // mantido só para migração de configs antigas
+    brapiTokens: [], // lista de tokens gratuitos da brapi.dev, usados em rotação
+    autoRefresh: false,
+    quoteRotation: { queueIndex: 0, usage: {} }, // controla a fila de tickers e o consumo diário por token
+  };
+
+  // limite observado no plano gratuito da brapi.dev: 1 ação por requisição, ~5 requisições/dia por token
+  const BRAPI_DAILY_LIMIT_PER_TOKEN = 5;
 
   function loadState() {
     try {
@@ -75,6 +63,15 @@
       const raw = localStorage.getItem(SETTINGS_KEY);
       if (raw) settings = Object.assign(settings, JSON.parse(raw));
     } catch (e) {}
+    // migração: quem já tinha um único token salvo, ganha ele na lista de rotação
+    if (!Array.isArray(settings.brapiTokens)) settings.brapiTokens = [];
+    if (settings.brapiToken && !settings.brapiTokens.includes(settings.brapiToken)) {
+      settings.brapiTokens.push(settings.brapiToken);
+    }
+    if (!settings.quoteRotation || typeof settings.quoteRotation !== "object") {
+      settings.quoteRotation = { queueIndex: 0, usage: {} };
+    }
+    if (!settings.quoteRotation.usage) settings.quoteRotation.usage = {};
   }
   function saveState() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
@@ -131,8 +128,6 @@
       sub.className = "sub " + (c.rentabilidade >= 0 ? "pos" : "neg");
     } else { sub.textContent = ""; sub.className = "sub"; }
 
-    document.getElementById("heroCard").classList.toggle("debt-heavy", c.totalDividas > c.totalAtivos);
-
     document.getElementById("totalAtivos").textContent = fmtCompact(c.totalAtivos);
     document.getElementById("totalDividas").textContent = fmtCompact(c.totalDividas);
 
@@ -150,8 +145,6 @@
     document.getElementById("debtsGroupTotal").textContent = fmt(c.totalDividas);
 
     if (typeof updateToggleAllLabel === "function") updateToggleAllLabel();
-    if (typeof updateInvestmentsGroupToggle === "function") updateInvestmentsGroupToggle();
-    if (typeof updateDebtsGroupToggle === "function") updateDebtsGroupToggle();
   }
 
   function renderDonut() {
@@ -214,15 +207,8 @@
       return parts.join(" · ");
     }
     if (cat.type === "fgts") {
-      const parts = [`Total do contrato: ${fmt(item.valorTotal)}`];
+      const parts = [`Total: ${fmt(item.valorTotal)}`];
       if (item.valorTotal) parts.push(`Multa (40%): ${fmt((Number(item.valorTotal) || 0) * 0.4)}`);
-      return parts.join(" · ");
-    }
-    if (cat.type === "corp_pension") {
-      const parts = [];
-      if (item.nomeEmpresa) parts.push(`Empresa: ${item.nomeEmpresa}`);
-      parts.push(`Colaborador ${fmt(item.valorAtualColaborador)}`);
-      parts.push(`Empresa ${fmt(item.valorAtualEmpresa)} (${Math.round((item.vestingPercentApplied || 0) * 100)}% vestido)`);
       return parts.join(" · ");
     }
     if (item.valorInvestido) return `Aplicado: ${fmt(item.valorInvestido)}`;
@@ -242,7 +228,7 @@
         : items.map((item) => {
             const investido = Number(item.valorInvestido) || 0;
             const atual = Number(item.valorAtual) || 0;
-            const delta = (cat.type !== "fgts" && cat.type !== "corp_pension" && investido > 0) ? ((atual - investido) / investido) * 100 : null;
+            const delta = (cat.type !== "fgts" && investido > 0) ? ((atual - investido) / investido) * 100 : null;
             return `<div class="row">
               <div class="row-main">
                 <div class="row-name">${escapeHtml(item.nome || "Sem nome")}</div>
@@ -379,7 +365,7 @@
 
   function openInvestmentModal(categoria, item) {
     const cat = INVESTMENT_CATEGORIES[categoria];
-    const isNew = cat.type === "corp_pension" ? (!item.nomeColaborador && !item.nomeEmpresa) : !item.nome;
+    const isNew = !item.nome;
     modalTitle.textContent = isNew ? `Novo em ${cat.label}` : "Editar investimento";
 
     let fieldsHtml = "";
@@ -403,28 +389,13 @@
         </div>
         <div class="field-hint">A cotação atual é buscada ao tocar em ↻ na Visão geral.</div>`;
     } else if (cat.type === "fgts") {
-      const multaPreview = fmt((Number(item.valorTotal) || 0) * 0.4);
       fieldsHtml = `
         <div class="field"><label>Nome</label><input type="text" name="nome" value="${escapeHtml(item.nome || "FGTS")}" placeholder="FGTS" required /></div>
         <div class="field-row">
-          <div class="field"><label>Valor total do contrato</label><input type="number" step="0.01" min="0" name="valorTotal" value="${item.valorTotal ?? ""}" placeholder="0,00" required /></div>
-          <div class="field"><label>Valor atual</label><input type="number" step="0.01" min="0" name="valorAtual" value="${item.valorAtual ?? ""}" placeholder="0,00" required /></div>
+          <div class="field"><label>Valor total</label><input type="number" step="0.01" min="0" name="valorTotal" value="${item.valorTotal ?? ""}" placeholder="0,00" required /></div>
+          <div class="field"><label>Saldo disponível</label><input type="number" step="0.01" min="0" name="saldoDisponivel" value="${item.saldoDisponivel ?? ""}" placeholder="0,00" required /></div>
         </div>
-        <div class="field-hint">Multa rescisória (40% do valor total do contrato): ${multaPreview}, calculada automaticamente e apenas informativa. Só o "valor atual" entra no cálculo do patrimônio.</div>`;
-    } else if (cat.type === "corp_pension") {
-      const vp = Math.round(vestingPercent() * 100);
-      fieldsHtml = `
-        <div class="field"><label>Nome do investimento (Colaborador)</label><input type="text" name="nomeColaborador" value="${escapeHtml(item.nomeColaborador || "")}" placeholder="Ex: Plano PGBL - parte colaborador" required /></div>
-        <div class="field-row">
-          <div class="field"><label>Valor aplicado (R$)</label><input type="number" step="0.01" min="0" name="valorAplicadoColaborador" value="${item.valorAplicadoColaborador ?? ""}" placeholder="0,00" /></div>
-          <div class="field"><label>Valor atual (R$)</label><input type="number" step="0.01" min="0" name="valorAtualColaborador" value="${item.valorAtualColaborador ?? ""}" placeholder="0,00" required /></div>
-        </div>
-        <div class="field" style="margin-top:14px"><label>Nome do investimento (Empresa)</label><input type="text" name="nomeEmpresa" value="${escapeHtml(item.nomeEmpresa || "")}" placeholder="Ex: Plano PGBL - parte empresa" required /></div>
-        <div class="field-row">
-          <div class="field"><label>Valor aplicado (R$)</label><input type="number" step="0.01" min="0" name="valorAplicadoEmpresa" value="${item.valorAplicadoEmpresa ?? ""}" placeholder="0,00" /></div>
-          <div class="field"><label>Valor atual (R$)</label><input type="number" step="0.01" min="0" name="valorAtualEmpresa" value="${item.valorAtualEmpresa ?? ""}" placeholder="0,00" required /></div>
-        </div>
-        <div class="field-hint">A parte da empresa segue vesting crescente (50% até out/2027, +10% a cada outubro até 100% em out/2031). Hoje, ${vp}% do valor atual da empresa conta no patrimônio.</div>`;
+        <div class="field-hint">A multa rescisória (40% do total) é calculada automaticamente. O saldo disponível é o que entra no patrimônio líquido.</div>`;
     } else {
       fieldsHtml = `
         <div class="field"><label>Nome</label><input type="text" name="nome" value="${escapeHtml(item.nome || "")}" placeholder="Nome do investimento" required /></div>
@@ -462,24 +433,9 @@
       } else if (cat.type === "fgts") {
         updated.nome = fd.get("nome");
         updated.valorTotal = Number(fd.get("valorTotal")) || 0;
-        updated.valorAtual = Number(fd.get("valorAtual")) || 0;
+        updated.saldoDisponivel = Number(fd.get("saldoDisponivel")) || 0;
+        updated.valorAtual = updated.saldoDisponivel;
         updated.valorInvestido = 0;
-      } else if (cat.type === "corp_pension") {
-        const vp = vestingPercent();
-        const valorAplicadoColaborador = Number(fd.get("valorAplicadoColaborador")) || 0;
-        const valorAtualColaborador = Number(fd.get("valorAtualColaborador")) || 0;
-        const valorAplicadoEmpresa = Number(fd.get("valorAplicadoEmpresa")) || 0;
-        const valorAtualEmpresa = Number(fd.get("valorAtualEmpresa")) || 0;
-        updated.nomeColaborador = fd.get("nomeColaborador");
-        updated.nomeEmpresa = fd.get("nomeEmpresa");
-        updated.valorAplicadoColaborador = valorAplicadoColaborador;
-        updated.valorAtualColaborador = valorAtualColaborador;
-        updated.valorAplicadoEmpresa = valorAplicadoEmpresa;
-        updated.valorAtualEmpresa = valorAtualEmpresa;
-        updated.vestingPercentApplied = vp;
-        updated.nome = `${updated.nomeColaborador} + ${updated.nomeEmpresa}`;
-        updated.valorInvestido = valorAplicadoColaborador + valorAplicadoEmpresa;
-        updated.valorAtual = valorAtualColaborador + valorAtualEmpresa * vp;
       } else {
         updated.nome = fd.get("nome");
         updated.valorInvestido = Number(fd.get("valorInvestido")) || 0;
@@ -616,18 +572,79 @@
   function deleteReceivable(id) { state.receivables = state.receivables.filter((r) => r.id !== id); saveState(); render(); }
 
   // ---------- live quotes ----------
-  async function fetchBrapiQuotes(tickers) {
-    if (tickers.length === 0) return {};
-    const token = settings.brapiToken.trim();
-    const url = `https://brapi.dev/api/quote/${encodeURIComponent(tickers.join(","))}`;
-    const res = await fetch(url, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    if (!res.ok) throw new Error("brapi_fail");
+  function todayKey() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function tokenList() {
+    // "" representa o acesso sem token (só as 4 ações livres da brapi)
+    return settings.brapiTokens.length ? settings.brapiTokens : [""];
+  }
+
+  function getTokenUsage(tokenIndex) {
+    const usage = settings.quoteRotation.usage[tokenIndex];
+    const today = todayKey();
+    if (!usage || usage.date !== today) return { date: today, count: 0 };
+    return usage;
+  }
+
+  function registerTokenUsage(tokenIndex) {
+    const usage = getTokenUsage(tokenIndex);
+    usage.count += 1;
+    settings.quoteRotation.usage[tokenIndex] = usage;
+    saveSettings();
+  }
+
+  function requestsAvailableToday() {
+    return tokenList().reduce((total, _tok, idx) => total + Math.max(0, BRAPI_DAILY_LIMIT_PER_TOKEN - getTokenUsage(idx).count), 0);
+  }
+
+  async function fetchOneQuote(ticker, token) {
+    const url = `https://brapi.dev/api/quote/${encodeURIComponent(ticker)}`;
+    const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!res.ok) throw new Error("brapi_fail_" + res.status);
     const data = await res.json();
+    const r = (data.results || [])[0];
+    return r ? r.regularMarketPrice : undefined;
+  }
+
+  // Free tier da brapi.dev: 1 ação por requisição e um número limitado de requisições/dia por token.
+  // Em vez de tentar buscar as 23 ações de uma vez (o que falha ou excede a cota), fazemos 1
+  // requisição por ticker e avançamos numa fila circular, gastando a cota disponível hoje
+  // (somada entre todos os tokens cadastrados) e continuando de onde parou na próxima atualização.
+  async function fetchBrapiQuotesRotated(tickers) {
     const map = {};
-    (data.results || []).forEach((r) => { map[r.symbol.toUpperCase()] = r.regularMarketPrice; });
-    return map;
+    const failed = [];
+    if (tickers.length === 0) return { map, updated: [], failed, remaining: 0, totalTickers: 0 };
+
+    const tokens = tokenList();
+    const usageCount = tokens.map((_, idx) => getTokenUsage(idx).count);
+    let budget = usageCount.reduce((sum, c) => sum + Math.max(0, BRAPI_DAILY_LIMIT_PER_TOKEN - c), 0);
+
+    let queueIndex = settings.quoteRotation.queueIndex % tickers.length;
+    const toAttempt = Math.min(budget, tickers.length);
+    const updated = [];
+
+    for (let i = 0; i < toAttempt; i++) {
+      const ticker = tickers[queueIndex];
+      const tokenIdx = usageCount.findIndex((c) => c < BRAPI_DAILY_LIMIT_PER_TOKEN);
+      if (tokenIdx === -1) break;
+      try {
+        const price = await fetchOneQuote(ticker, tokens[tokenIdx].trim());
+        if (price !== undefined) { map[ticker] = price; updated.push(ticker); }
+        else failed.push(ticker);
+      } catch (e) {
+        failed.push(ticker);
+      }
+      usageCount[tokenIdx] += 1;
+      registerTokenUsage(tokenIdx);
+      queueIndex = (queueIndex + 1) % tickers.length;
+    }
+
+    settings.quoteRotation.queueIndex = queueIndex;
+    saveSettings();
+
+    return { map, updated, failed, remaining: requestsAvailableToday(), totalTickers: tickers.length };
   }
 
   async function fetchCoinGeckoPrices(ids) {
@@ -650,15 +667,16 @@
     const coinIds = [...new Set(cryptoItems.map((i) => i.coinId.toLowerCase()))];
 
     const results = await Promise.allSettled([
-      fetchBrapiQuotes(tickers),
+      fetchBrapiQuotesRotated(tickers),
       fetchCoinGeckoPrices(coinIds),
     ]);
 
     let okStock = results[0].status === "fulfilled";
     let okCrypto = results[1].status === "fulfilled";
+    let stockInfo = okStock ? results[0].value : null;
 
-    if (okStock) {
-      const priceMap = results[0].value;
+    if (okStock && stockInfo) {
+      const priceMap = stockInfo.map;
       stockItems.forEach((item) => {
         const price = priceMap[item.ticker.toUpperCase()];
         if (price !== undefined) {
@@ -686,8 +704,16 @@
     const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
     if (tickers.length === 0 && coinIds.length === 0) {
       statusEl.textContent = "Adicione um ticker ou moeda para ativar cotações em tempo real.";
-    } else if (okStock && okCrypto) {
-      statusEl.textContent = `Cotações atualizadas às ${now}.`;
+    } else if (okStock && stockInfo && tickers.length > 0) {
+      const { updated, totalTickers, remaining } = stockInfo;
+      if (updated.length === 0) {
+        statusEl.textContent = `Cota diária da brapi.dev esgotada (${totalTickers} ações na fila). Volte mais tarde ou adicione outro token nas configurações.`;
+      } else if (updated.length < totalTickers) {
+        statusEl.textContent = `${updated.length} de ${totalTickers} ações atualizadas às ${now} (fila continua de onde parou). Cota restante hoje: ${remaining}.`;
+      } else {
+        statusEl.textContent = `Todas as ${totalTickers} ações atualizadas às ${now}.${okCrypto ? "" : " (cripto falhou)"}`;
+      }
+      if (!okCrypto && coinIds.length) showToast("Cripto não pôde ser atualizada agora.");
     } else {
       const problems = [];
       if (!okStock && tickers.length) problems.push("ações/FIIs");
@@ -700,10 +726,19 @@
   // ---------- settings modal ----------
   const settingsOverlay = document.getElementById("settingsOverlay");
   function openSettings() {
-    document.getElementById("brapiToken").value = settings.brapiToken || "";
+    document.getElementById("brapiTokens").value = (settings.brapiTokens || []).join("\n");
     document.getElementById("autoRefreshToggle").checked = !!settings.autoRefresh;
+    updateQuotaHint();
     applyTheme();
     settingsOverlay.hidden = false;
+  }
+  function updateQuotaHint() {
+    const hintEl = document.getElementById("quotaHint");
+    if (!hintEl) return;
+    const nTokens = tokenList().length;
+    const cap = nTokens * BRAPI_DAILY_LIMIT_PER_TOKEN;
+    const usedToday = cap - requestsAvailableToday();
+    hintEl.textContent = `Cota estimada: ${usedToday}/${cap} requisições usadas hoje (${nTokens} token${nTokens > 1 ? "s" : ""} × ${BRAPI_DAILY_LIMIT_PER_TOKEN}/dia).`;
   }
   function closeSettings() { settingsOverlay.hidden = true; }
 
@@ -739,10 +774,7 @@
   });
 
   document.getElementById("openSettings").addEventListener("click", openSettings);
-  document.getElementById("refreshQuotes").addEventListener("click", (e) => {
-    e.preventDefault();
-    refreshAllQuotes().catch(() => showToast("Não consegui atualizar as cotações agora."));
-  });
+  document.getElementById("refreshQuotes").addEventListener("click", () => refreshAllQuotes().catch(() => showToast("Não consegui atualizar as cotações agora.")));
 
   document.getElementById("themeToggle").addEventListener("click", (e) => {
     const btn = e.target.closest(".theme-opt");
@@ -751,9 +783,14 @@
     saveSettings(); applyTheme();
   });
 
-  document.getElementById("brapiToken").addEventListener("change", (e) => {
-    settings.brapiToken = e.target.value.trim();
+  document.getElementById("brapiTokens").addEventListener("change", (e) => {
+    settings.brapiTokens = e.target.value
+      .split(/[\n,]/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+    settings.brapiToken = ""; // não usamos mais o campo antigo
     saveSettings();
+    updateQuotaHint();
   });
   document.getElementById("autoRefreshToggle").addEventListener("change", (e) => {
     settings.autoRefresh = e.target.checked;
@@ -816,7 +853,7 @@
   function updateToggleAllLabel() {
     const allDetails = document.querySelectorAll("#cards details");
     const anyOpen = Array.from(allDetails).some((d) => d.open);
-    toggleAllBtn.classList.toggle("open", anyOpen);
+    toggleAllBtn.textContent = anyOpen ? "⌃" : "⌄";
     toggleAllBtn.title = anyOpen ? "Recolher tudo" : "Expandir tudo";
     toggleAllBtn.setAttribute("aria-label", toggleAllBtn.title);
   }
@@ -828,47 +865,6 @@
   });
   document.getElementById("cards").addEventListener("toggle", updateToggleAllLabel, true);
   updateToggleAllLabel();
-
-  // ---------- ocultar / mostrar valores ----------
-  const EYE_ICON = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>`;
-  const EYE_OFF_ICON = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M3 3l18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
-  const toggleValuesBtn = document.getElementById("toggleValuesBtn");
-  function updateEyeIcon() {
-    toggleValuesBtn.innerHTML = settings.hideValues ? EYE_OFF_ICON : EYE_ICON;
-    toggleValuesBtn.title = settings.hideValues ? "Mostrar valores" : "Ocultar valores";
-    toggleValuesBtn.setAttribute("aria-label", toggleValuesBtn.title);
-  }
-  toggleValuesBtn.addEventListener("click", () => {
-    settings.hideValues = !settings.hideValues;
-    saveSettings();
-    updateEyeIcon();
-    render();
-  });
-  updateEyeIcon();
-
-  // ---------- recolher / expandir dentro de um grupo específico ----------
-  function wireGroupToggle(btnId, containerId) {
-    const btn = document.getElementById(btnId);
-    const container = document.getElementById(containerId);
-    function update() {
-      const subs = container.querySelectorAll("details.sub-block");
-      const anyOpen = Array.from(subs).some((d) => d.open);
-      btn.title = anyOpen ? "Recolher categorias" : "Expandir categorias";
-    }
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const subs = container.querySelectorAll("details.sub-block");
-      const anyOpen = Array.from(subs).some((d) => d.open);
-      subs.forEach((d) => { d.open = !anyOpen; });
-      update();
-    });
-    container.addEventListener("toggle", update, true);
-    update();
-    return update;
-  }
-  const updateInvestmentsGroupToggle = wireGroupToggle("toggleInvestmentsSub", "investmentCards");
-  const updateDebtsGroupToggle = wireGroupToggle("toggleDebtsSub", "debtCards");
 
   // ---------- init ----------
   loadState();

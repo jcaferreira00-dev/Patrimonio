@@ -1,0 +1,588 @@
+{
+  "investments": [
+    {
+      "id": "tl0vjdd3",
+      "categoria": "ilp",
+      "nome": "KLABIN",
+      "ticker": "KLBN11",
+      "quantidade": 67,
+      "precoMedio": 21.66,
+      "precoAtual": 17.1,
+      "valorInvestido": 1451.22,
+      "valorAtual": 1145.7,
+      "lastUpdate": 1783299321834
+    },
+    {
+      "id": "x122jg36",
+      "categoria": "ilp",
+      "nome": "KLABIN",
+      "ticker": "KLBN11",
+      "quantidade": 108,
+      "precoMedio": 18.66,
+      "precoAtual": 17.1,
+      "valorInvestido": 2015.28,
+      "valorAtual": 1846.8000000000002,
+      "lastUpdate": 1783299321834
+    },
+    {
+      "id": "m2m5j9ki",
+      "categoria": "ilp",
+      "nome": "KLABIN",
+      "ticker": "KLBN11",
+      "quantidade": 270,
+      "precoMedio": 19.16,
+      "precoAtual": 17.1,
+      "valorInvestido": 5173.2,
+      "valorAtual": 4617,
+      "lastUpdate": 1783299321834
+    },
+    {
+      "id": "smnf5v2y",
+      "categoria": "ilp",
+      "nome": "KLABIN",
+      "ticker": "KLBN11",
+      "quantidade": 67,
+      "precoMedio": 21.66,
+      "precoAtual": 17.1,
+      "valorInvestido": 1451.22,
+      "valorAtual": 1145.7,
+      "lastUpdate": 1783299321834
+    },
+    {
+      "id": "rptoa0hl",
+      "categoria": "ilp",
+      "nome": "KLABIN",
+      "ticker": "KLBN11",
+      "quantidade": 108,
+      "precoMedio": 18.66,
+      "precoAtual": 17.1,
+      "valorInvestido": 2015.28,
+      "valorAtual": 1846.8000000000002,
+      "lastUpdate": 1783299321834
+    },
+    {
+      "id": "1kvuk96f",
+      "categoria": "ilp",
+      "nome": "KLABIN",
+      "ticker": "KLBN11",
+      "quantidade": 270,
+      "precoMedio": 19.16,
+      "precoAtual": 17.1,
+      "valorInvestido": 5173.2,
+      "valorAtual": 4617,
+      "lastUpdate": 1783299321834
+    },
+    {
+      "id": "61w1c00p",
+      "categoria": "fgts",
+      "nome": "FGTS",
+      "valorTotal": 129893.96,
+      "valorAtual": 10503.81,
+      "valorInvestido": 0
+    },
+    {
+      "id": "kqdtr6d4",
+      "categoria": "prev_corporativa",
+      "nomeColaborador": "BASICA VGBL",
+      "nomeEmpresa": "PLANO FUNCIONÁRIO",
+      "valorAplicadoColaborador": 30518.63,
+      "valorAtualColaborador": 30518.63,
+      "valorAplicadoEmpresa": 45778.06,
+      "valorAtualEmpresa": 45778.06,
+      "vestingPercentApplied": 0.5,
+      "nome": "BASICA VGBL + PLANO FUNCIONÁRIO",
+      "valorInvestido": 76296.69,
+      "valorAtual": 53407.66
+    },
+    {
+      "id": "xl9ydzsj",
+      "categoria": "prev_pessoal",
+      "nome": "ARX Denali XP - PGBL",
+      "valorInvestido": 43621.55,
+      "valorAtual": 50370.99
+    },
+    {
+      "id": "6v13r3uk",
+      "categoria": "renda_fixa",
+      "nome": "Tesouro Selic 2031",
+      "valorInvestido": 18761.89,
+      "valorAtual": 19643.96
+    },
+    {
+      "id": "75a0nqcj",
+      "categoria": "renda_fixa",
+      "nome": "Tesouro IPCA+ 2035",
+      "valorInvestido": 6051.16,
+      "valorAtual": 6381.84
+    },
+    {
+      "id": "ewrc38rq",
+      "categoria": "renda_fixa",
+      "nome": "Tesouro IPCA+ 2040",
+      "valorInvestido": 4996.82,
+      "valorAtual": 5499.93
+    },
+    {
+      "id": "o71oj2r2",
+      "categoria": "renda_fixa",
+      "nome": "Tesouro IPCA+ Juros Semestrais",
+      "valorInvestido": 2482.17,
+      "valorAtual": 2323.34
+    },
+    {
+      "id": "mbeemxam",
+      "categoria": "renda_fixa",
+      "nome": "Caixinha NUBANK - 100% CDI",
+      "valorInvestido": 6501,
+      "valorAtual": 6563.29
+    },
+    {
+      "id": "ihdwr47b",
+      "categoria": "acoes",
+      "nome": "Brasil Agro",
+      "ticker": "AGRO3",
+      "quantidade": 137,
+      "precoMedio": 24.82,
+      "precoAtual": 24.82,
+      "valorInvestido": 3400.34,
+      "valorAtual": 3400.34,
+      "lastUpdate": null
+    },
+    {
+      "id": "ob4gtkle",
+      "categoria": "acoes",
+      "nome": "Eletrobras",
+      "ticker": "AXIA3",
+      "quantidade": 217,
+      "precoMedio": 30.93,
+      "precoAtual": 30.93,
+      "valorInvestido": 6711.8099999999995,
+      "valorAtual": 6711.8099999999995,
+      "lastUpdate": null
+    },
+    {
+      "id": "xe1elni6",
+      "categoria": "acoes",
+      "nome": "Eletrobras",
+      "ticker": "AXIA7",
+      "quantidade": 52,
+      "precoMedio": 32.57,
+      "precoAtual": 32.57,
+      "valorInvestido": 1693.64,
+      "valorAtual": 1693.64,
+      "lastUpdate": null
+    },
+    {
+      "id": "zxed8wr6",
+      "categoria": "acoes",
+      "nome": "Banco Brasil",
+      "ticker": "BBAS3",
+      "quantidade": 565,
+      "precoMedio": 24.12,
+      "precoAtual": 24.12,
+      "valorInvestido": 13627.800000000001,
+      "valorAtual": 13627.800000000001,
+      "lastUpdate": null
+    },
+    {
+      "id": "5qlhroy5",
+      "categoria": "acoes",
+      "nome": "BB Seguridade",
+      "ticker": "BBSE3",
+      "quantidade": 151,
+      "precoMedio": 31.36,
+      "precoAtual": 31.36,
+      "valorInvestido": 4735.36,
+      "valorAtual": 4735.36,
+      "lastUpdate": null
+    },
+    {
+      "id": "o5rv9ntb",
+      "categoria": "acoes",
+      "nome": "Engie Brasil",
+      "ticker": "EGIE3",
+      "quantidade": 463,
+      "precoMedio": 28.87,
+      "precoAtual": 28.87,
+      "valorInvestido": 13366.810000000001,
+      "valorAtual": 13366.810000000001,
+      "lastUpdate": null
+    },
+    {
+      "id": "to0njfpo",
+      "categoria": "acoes",
+      "nome": "Petrobras",
+      "ticker": "PETR4",
+      "quantidade": 198,
+      "precoMedio": 30.27,
+      "precoAtual": 30.27,
+      "valorInvestido": 5993.46,
+      "valorAtual": 5993.46,
+      "lastUpdate": null
+    },
+    {
+      "id": "sz4iomlw",
+      "categoria": "acoes",
+      "nome": "Tupy",
+      "ticker": "TUPY3",
+      "quantidade": 258,
+      "precoMedio": 25.67,
+      "precoAtual": 25.67,
+      "valorInvestido": 6622.860000000001,
+      "valorAtual": 6622.860000000001,
+      "lastUpdate": null
+    },
+    {
+      "id": "me6xk0qb",
+      "categoria": "acoes",
+      "nome": "Unipar",
+      "ticker": "UNIP6",
+      "quantidade": 147,
+      "precoMedio": 62.76,
+      "precoAtual": 62.76,
+      "valorInvestido": 9225.72,
+      "valorAtual": 9225.72,
+      "lastUpdate": null
+    },
+    {
+      "id": "xbd8s0cf",
+      "categoria": "acoes",
+      "nome": "Vale",
+      "ticker": "VALE3",
+      "quantidade": 157,
+      "precoMedio": 67.12,
+      "precoAtual": 67.12,
+      "valorInvestido": 10537.84,
+      "valorAtual": 10537.84,
+      "lastUpdate": null
+    },
+    {
+      "id": "p78qmd0n",
+      "categoria": "acoes",
+      "nome": "Wiz CO",
+      "ticker": "WIZC3",
+      "quantidade": 1349,
+      "precoMedio": 5.94,
+      "precoAtual": 5.94,
+      "valorInvestido": 8013.06,
+      "valorAtual": 8013.06,
+      "lastUpdate": null
+    },
+    {
+      "id": "b1frx9yi",
+      "categoria": "fiis",
+      "nome": "Guardian Logistica",
+      "ticker": "GARE11",
+      "quantidade": 174,
+      "precoMedio": 9.03,
+      "precoAtual": 9.03,
+      "valorInvestido": 1571.2199999999998,
+      "valorAtual": 1571.2199999999998,
+      "lastUpdate": null
+    },
+    {
+      "id": "t14pqc4o",
+      "categoria": "fiis",
+      "nome": "BTG Pactual Logística",
+      "ticker": "BTLG11",
+      "quantidade": 47,
+      "precoMedio": 97.26,
+      "precoAtual": 97.26,
+      "valorInvestido": 4571.22,
+      "valorAtual": 4571.22,
+      "lastUpdate": null
+    },
+    {
+      "id": "34wey3v5",
+      "categoria": "fiis",
+      "nome": "Fundo Athena I",
+      "ticker": "FATN11",
+      "quantidade": 30,
+      "precoMedio": 81.84,
+      "precoAtual": 81.84,
+      "valorInvestido": 2455.2000000000003,
+      "valorAtual": 2455.2000000000003,
+      "lastUpdate": null
+    },
+    {
+      "id": "hk8m3s9s",
+      "categoria": "fiis",
+      "nome": "Patria Renda Urbana",
+      "ticker": "HGRU11",
+      "quantidade": 24,
+      "precoMedio": 116.2,
+      "precoAtual": 116.2,
+      "valorInvestido": 2788.8,
+      "valorAtual": 2788.8,
+      "lastUpdate": null
+    },
+    {
+      "id": "e0ar5868",
+      "categoria": "fiis",
+      "nome": "Kinea Unique",
+      "ticker": "KNUQ11",
+      "quantidade": 30,
+      "precoMedio": 108.8,
+      "precoAtual": 108.8,
+      "valorInvestido": 3264,
+      "valorAtual": 3264,
+      "lastUpdate": null
+    },
+    {
+      "id": "isz5vqzf",
+      "categoria": "fiis",
+      "nome": "Maua Capital Recebiveis",
+      "ticker": "MCCI11",
+      "quantidade": 8,
+      "precoMedio": 88.79,
+      "precoAtual": 88.79,
+      "valorInvestido": 710.32,
+      "valorAtual": 710.32,
+      "lastUpdate": null
+    },
+    {
+      "id": "ofn5i32h",
+      "categoria": "fiis",
+      "nome": "VBI Prime",
+      "ticker": "PVBI11",
+      "quantidade": 25,
+      "precoMedio": 75.74,
+      "precoAtual": 75.74,
+      "valorInvestido": 1893.4999999999998,
+      "valorAtual": 1893.4999999999998,
+      "lastUpdate": null
+    },
+    {
+      "id": "25w6uqac",
+      "categoria": "fiis",
+      "nome": "FII REC Recebíveis Imobiliários",
+      "ticker": "RECR11",
+      "quantidade": 34,
+      "precoMedio": 79.41,
+      "precoAtual": 79.41,
+      "valorInvestido": 2699.94,
+      "valorAtual": 2699.94,
+      "lastUpdate": null
+    },
+    {
+      "id": "pilxt7er",
+      "categoria": "fiis",
+      "nome": "FII REC Recebíveis Imobiliários",
+      "ticker": "RECR12",
+      "quantidade": 5,
+      "precoMedio": 0,
+      "precoAtual": 0,
+      "valorInvestido": 0,
+      "valorAtual": 0,
+      "lastUpdate": null
+    },
+    {
+      "id": "h3wrmsd2",
+      "categoria": "fiis",
+      "nome": "TRX Real Estate",
+      "ticker": "TRXF11",
+      "quantidade": 15,
+      "precoMedio": 97.79,
+      "precoAtual": 97.79,
+      "valorInvestido": 1466.8500000000001,
+      "valorAtual": 1466.8500000000001,
+      "lastUpdate": null
+    },
+    {
+      "id": "rts8ja1e",
+      "categoria": "fiis",
+      "nome": "Valora RE III Fundo",
+      "ticker": "VGIP11",
+      "quantidade": 15,
+      "precoMedio": 80.66,
+      "precoAtual": 80.66,
+      "valorInvestido": 1209.8999999999999,
+      "valorAtual": 1209.8999999999999,
+      "lastUpdate": null
+    },
+    {
+      "id": "sgmxfsw9",
+      "categoria": "fiis",
+      "nome": "Vinci Shopping Fundo",
+      "ticker": "VISC11",
+      "quantidade": 15,
+      "precoMedio": 102.88,
+      "precoAtual": 102.88,
+      "valorInvestido": 1543.1999999999998,
+      "valorAtual": 1543.1999999999998,
+      "lastUpdate": null
+    },
+    {
+      "id": "p5zkuh9s",
+      "categoria": "fiis",
+      "nome": "XP Malls FII",
+      "ticker": "XPML11",
+      "quantidade": 15,
+      "precoMedio": 100.42,
+      "precoAtual": 100.42,
+      "valorInvestido": 1506.3,
+      "valorAtual": 1506.3,
+      "lastUpdate": null
+    },
+    {
+      "id": "6o4lmf5d",
+      "categoria": "outras_cryptos",
+      "nome": "CoinEx BITCOIN",
+      "coinId": "bitcoin",
+      "quantidade": 0.00550813,
+      "precoMedio": 336990.5,
+      "precoAtual": 329528,
+      "valorInvestido": 1856.187482765,
+      "valorAtual": 1815.08306264,
+      "lastUpdate": 1783302768706
+    },
+    {
+      "id": "yo00dr0m",
+      "categoria": "outras_cryptos",
+      "nome": "Coin Ex - Ordens em USDT",
+      "coinId": "usdt",
+      "quantidade": 1,
+      "precoMedio": 2000,
+      "precoAtual": 2000,
+      "valorInvestido": 2000,
+      "valorAtual": 2000,
+      "lastUpdate": null
+    },
+    {
+      "id": "gh0texoe",
+      "categoria": "bitcoin",
+      "nome": "Exodus Wallet - HardWallet",
+      "coinId": "bitcoin",
+      "quantidade": 0.03276409,
+      "precoMedio": 180000,
+      "precoAtual": 329528,
+      "valorInvestido": 5897.5362000000005,
+      "valorAtual": 10796.685049520001,
+      "lastUpdate": 1783302768706
+    }
+  ],
+  "debts": [
+    {
+      "id": "pbi2bhm0",
+      "categoria": "cartao_credito",
+      "nome": "Nubank",
+      "valorTotal": 2761.08,
+      "taxaJuros": "",
+      "parcela": "578"
+    },
+    {
+      "id": "v4o8dnfx",
+      "categoria": "cartao_credito",
+      "nome": "Bradesco",
+      "valorTotal": 3314.01,
+      "taxaJuros": "",
+      "parcela": "695.67"
+    },
+    {
+      "id": "jd6cnj6q",
+      "categoria": "carta_credito",
+      "nome": "Carta de Crédito Bradesco 1",
+      "valorTotal": 11116.15,
+      "taxaJuros": "",
+      "parcela": "271.93"
+    },
+    {
+      "id": "85mfadqw",
+      "categoria": "carta_credito",
+      "nome": "Carta de Crédito Bradesco 2",
+      "valorTotal": 19397.55,
+      "taxaJuros": "",
+      "parcela": "425.98"
+    },
+    {
+      "id": "v6jr4ezv",
+      "categoria": "financiamento_casa",
+      "nome": "Financiamento Casa Barbacena",
+      "valorTotal": 39100,
+      "taxaJuros": "",
+      "parcela": "870"
+    },
+    {
+      "id": "zhsva4tu",
+      "categoria": "fies",
+      "nome": "FIES",
+      "valorTotal": 59072,
+      "taxaJuros": "",
+      "parcela": "514.90"
+    }
+  ],
+  "properties": [
+    {
+      "id": "wgfwaemh",
+      "nome": "Casa Medina",
+      "endereco": "Rua Medina - 300 Area VI",
+      "matricula": "",
+      "valorEstimado": 140000
+    },
+    {
+      "id": "vmppwmvh",
+      "nome": "Casa Barbacena",
+      "endereco": "TV Barbacena 145 Area VI",
+      "matricula": "",
+      "valorEstimado": 320000
+    },
+    {
+      "id": "yqo151kv",
+      "nome": "Chácara",
+      "endereco": "Rua Guaratinguetá - 51 Area VI",
+      "matricula": "",
+      "valorEstimado": 20000
+    }
+  ],
+  "receivables": [
+    {
+      "id": "w5axq12r",
+      "nome": "Gabriel",
+      "valor": 5600,
+      "dataPrevista": "Todo dia 5 até Fev. 2027",
+      "observacao": "Moto"
+    },
+    {
+      "id": "2qjtfdrz",
+      "nome": "Alessandro",
+      "valor": 469.12,
+      "dataPrevista": "Sem Previsão",
+      "observacao": "Gasolina"
+    },
+    {
+      "id": "tjppdw07",
+      "nome": "Franklin",
+      "valor": 350,
+      "dataPrevista": "19/12/2025",
+      "observacao": "Contas"
+    },
+    {
+      "id": "wi4kq6dh",
+      "nome": "Tarnoski",
+      "valor": 18.1,
+      "dataPrevista": "Todo dia 01",
+      "observacao": "Rateio Youtube"
+    },
+    {
+      "id": "bwhywd7f",
+      "nome": "Simone",
+      "valor": 18.1,
+      "dataPrevista": "Todo dia 01",
+      "observacao": "Rateio Youtube"
+    },
+    {
+      "id": "jgxm973t",
+      "nome": "Robson",
+      "valor": 69.84,
+      "dataPrevista": "01/04/2024",
+      "observacao": "Rateio Spotfy Anual"
+    },
+    {
+      "id": "yxbjalmb",
+      "nome": "Eduardo",
+      "valor": 139.56,
+      "dataPrevista": "01/04/2027",
+      "observacao": "Rateio Spotfy Anual"
+    }
+  ]
+}
