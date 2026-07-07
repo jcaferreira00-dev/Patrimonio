@@ -191,12 +191,15 @@
     <div class="settings-group">
       <div class="settings-label">Cotações em tempo real</div>
       <div class="field">
-        <label>Token da brapi.dev (opcional, para ações/FIIs além dos tickers de teste)</label>
-        <input type="text" id="brapiToken" placeholder="Cole seu token gratuito aqui" />
+        <label>Tokens da brapi.dev (um por linha — quanto mais tokens, mais ações por dia)</label>
+        <textarea id="brapiTokens" rows="3" placeholder="Cole aqui 1 ou mais tokens gratuitos, um por linha"></textarea>
       </div>
       <div class="settings-hint">
-        Crie um token grátis em <span class="mono">brapi.dev/dashboard</span>. Sem token, só funcionam PETR4, VALE3, MGLU3 e ITUB4.
+        Crie tokens grátis em <span class="mono">brapi.dev/dashboard</span> (pode criar mais de uma conta). O plano gratuito
+        permite ~5 requisições por dia por token e 1 ação por requisição. Com várias ações cadastradas, o app atualiza
+        algumas por vez em fila e continua de onde parou no dia seguinte.
       </div>
+      <div class="settings-hint" id="quotaHint"></div>
       <div class="settings-row" style="margin-top:10px">
         <div>
           <div class="settings-label">Atualizar automaticamente</div>

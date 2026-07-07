@@ -64,7 +64,17 @@
 
   // ---------- state ----------
   let state = { investments: [], debts: [], properties: [], receivables: [] };
-  let settings = { theme: "dark", brapiToken: "", autoRefresh: false, hideValues: false };
+  let settings = {
+    theme: "dark",
+    brapiToken: "", // mantido só para migração de configs antigas
+    brapiTokens: [], // lista de tokens gratuitos da brapi.dev, usados em rotação
+    autoRefresh: false,
+    hideValues: false,
+    quoteRotation: { queueIndex: 0, usage: {} }, // controla a fila de tickers e o consumo diário por token
+  };
+
+  // limite observado no plano gratuito da brapi.dev: 1 ação por requisição, ~5 requisições/dia por token
+  const BRAPI_DAILY_LIMIT_PER_TOKEN = 5;
 
   function loadState() {
     try {
@@ -75,6 +85,15 @@
       const raw = localStorage.getItem(SETTINGS_KEY);
       if (raw) settings = Object.assign(settings, JSON.parse(raw));
     } catch (e) {}
+    // migração: quem já tinha um único token salvo, ganha ele na lista de rotação
+    if (!Array.isArray(settings.brapiTokens)) settings.brapiTokens = [];
+    if (settings.brapiToken && !settings.brapiTokens.includes(settings.brapiToken)) {
+      settings.brapiTokens.push(settings.brapiToken);
+    }
+    if (!settings.quoteRotation || typeof settings.quoteRotation !== "object") {
+      settings.quoteRotation = { queueIndex: 0, usage: {} };
+    }
+    if (!settings.quoteRotation.usage) settings.quoteRotation.usage = {};
   }
   function saveState() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
@@ -616,18 +635,79 @@
   function deleteReceivable(id) { state.receivables = state.receivables.filter((r) => r.id !== id); saveState(); render(); }
 
   // ---------- live quotes ----------
-  async function fetchBrapiQuotes(tickers) {
-    if (tickers.length === 0) return {};
-    const token = settings.brapiToken.trim();
-    const url = `https://brapi.dev/api/quote/${encodeURIComponent(tickers.join(","))}`;
-    const res = await fetch(url, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    if (!res.ok) throw new Error("brapi_fail");
+  function todayKey() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function tokenList() {
+    // "" representa o acesso sem token (só as 4 ações livres da brapi)
+    return settings.brapiTokens.length ? settings.brapiTokens : [""];
+  }
+
+  function getTokenUsage(tokenIndex) {
+    const usage = settings.quoteRotation.usage[tokenIndex];
+    const today = todayKey();
+    if (!usage || usage.date !== today) return { date: today, count: 0 };
+    return usage;
+  }
+
+  function registerTokenUsage(tokenIndex) {
+    const usage = getTokenUsage(tokenIndex);
+    usage.count += 1;
+    settings.quoteRotation.usage[tokenIndex] = usage;
+    saveSettings();
+  }
+
+  function requestsAvailableToday() {
+    return tokenList().reduce((total, _tok, idx) => total + Math.max(0, BRAPI_DAILY_LIMIT_PER_TOKEN - getTokenUsage(idx).count), 0);
+  }
+
+  async function fetchOneQuote(ticker, token) {
+    const url = `https://brapi.dev/api/quote/${encodeURIComponent(ticker)}`;
+    const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!res.ok) throw new Error("brapi_fail_" + res.status);
     const data = await res.json();
+    const r = (data.results || [])[0];
+    return r ? r.regularMarketPrice : undefined;
+  }
+
+  // Free tier da brapi.dev: 1 ação por requisição e um número limitado de requisições/dia por token.
+  // Em vez de tentar buscar todas as ações de uma vez (o que falha ou excede a cota), fazemos 1
+  // requisição por ticker e avançamos numa fila circular, gastando a cota disponível hoje
+  // (somada entre todos os tokens cadastrados) e continuando de onde parou na próxima atualização.
+  async function fetchBrapiQuotesRotated(tickers) {
     const map = {};
-    (data.results || []).forEach((r) => { map[r.symbol.toUpperCase()] = r.regularMarketPrice; });
-    return map;
+    const failed = [];
+    if (tickers.length === 0) return { map, updated: [], failed, remaining: 0, totalTickers: 0 };
+
+    const tokens = tokenList();
+    const usageCount = tokens.map((_, idx) => getTokenUsage(idx).count);
+    let budget = usageCount.reduce((sum, c) => sum + Math.max(0, BRAPI_DAILY_LIMIT_PER_TOKEN - c), 0);
+
+    let queueIndex = settings.quoteRotation.queueIndex % tickers.length;
+    const toAttempt = Math.min(budget, tickers.length);
+    const updated = [];
+
+    for (let i = 0; i < toAttempt; i++) {
+      const ticker = tickers[queueIndex];
+      const tokenIdx = usageCount.findIndex((c) => c < BRAPI_DAILY_LIMIT_PER_TOKEN);
+      if (tokenIdx === -1) break;
+      try {
+        const price = await fetchOneQuote(ticker, tokens[tokenIdx].trim());
+        if (price !== undefined) { map[ticker] = price; updated.push(ticker); }
+        else failed.push(ticker);
+      } catch (e) {
+        failed.push(ticker);
+      }
+      usageCount[tokenIdx] += 1;
+      registerTokenUsage(tokenIdx);
+      queueIndex = (queueIndex + 1) % tickers.length;
+    }
+
+    settings.quoteRotation.queueIndex = queueIndex;
+    saveSettings();
+
+    return { map, updated, failed, remaining: requestsAvailableToday(), totalTickers: tickers.length };
   }
 
   async function fetchCoinGeckoPrices(ids) {
@@ -650,15 +730,16 @@
     const coinIds = [...new Set(cryptoItems.map((i) => i.coinId.toLowerCase()))];
 
     const results = await Promise.allSettled([
-      fetchBrapiQuotes(tickers),
+      fetchBrapiQuotesRotated(tickers),
       fetchCoinGeckoPrices(coinIds),
     ]);
 
     let okStock = results[0].status === "fulfilled";
     let okCrypto = results[1].status === "fulfilled";
+    let stockInfo = okStock ? results[0].value : null;
 
-    if (okStock) {
-      const priceMap = results[0].value;
+    if (okStock && stockInfo) {
+      const priceMap = stockInfo.map;
       stockItems.forEach((item) => {
         const price = priceMap[item.ticker.toUpperCase()];
         if (price !== undefined) {
@@ -686,8 +767,16 @@
     const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
     if (tickers.length === 0 && coinIds.length === 0) {
       statusEl.textContent = "Adicione um ticker ou moeda para ativar cotações em tempo real.";
-    } else if (okStock && okCrypto) {
-      statusEl.textContent = `Cotações atualizadas às ${now}.`;
+    } else if (okStock && stockInfo && tickers.length > 0) {
+      const { updated, totalTickers, remaining } = stockInfo;
+      if (updated.length === 0) {
+        statusEl.textContent = `Cota diária da brapi.dev esgotada (${totalTickers} ações na fila). Volte mais tarde ou adicione outro token nas configurações.`;
+      } else if (updated.length < totalTickers) {
+        statusEl.textContent = `${updated.length} de ${totalTickers} ações atualizadas às ${now} (fila continua de onde parou). Cota restante hoje: ${remaining}.`;
+      } else {
+        statusEl.textContent = `Todas as ${totalTickers} ações atualizadas às ${now}.${okCrypto ? "" : " (cripto falhou)"}`;
+      }
+      if (!okCrypto && coinIds.length) showToast("Cripto não pôde ser atualizada agora.");
     } else {
       const problems = [];
       if (!okStock && tickers.length) problems.push("ações/FIIs");
@@ -700,10 +789,19 @@
   // ---------- settings modal ----------
   const settingsOverlay = document.getElementById("settingsOverlay");
   function openSettings() {
-    document.getElementById("brapiToken").value = settings.brapiToken || "";
+    document.getElementById("brapiTokens").value = (settings.brapiTokens || []).join("\n");
     document.getElementById("autoRefreshToggle").checked = !!settings.autoRefresh;
+    updateQuotaHint();
     applyTheme();
     settingsOverlay.hidden = false;
+  }
+  function updateQuotaHint() {
+    const hintEl = document.getElementById("quotaHint");
+    if (!hintEl) return;
+    const nTokens = tokenList().length;
+    const cap = nTokens * BRAPI_DAILY_LIMIT_PER_TOKEN;
+    const usedToday = cap - requestsAvailableToday();
+    hintEl.textContent = `Cota estimada: ${usedToday}/${cap} requisições usadas hoje (${nTokens} token${nTokens > 1 ? "s" : ""} × ${BRAPI_DAILY_LIMIT_PER_TOKEN}/dia).`;
   }
   function closeSettings() { settingsOverlay.hidden = true; }
 
@@ -751,9 +849,14 @@
     saveSettings(); applyTheme();
   });
 
-  document.getElementById("brapiToken").addEventListener("change", (e) => {
-    settings.brapiToken = e.target.value.trim();
+  document.getElementById("brapiTokens").addEventListener("change", (e) => {
+    settings.brapiTokens = e.target.value
+      .split(/[\n,]/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+    settings.brapiToken = ""; // não usamos mais o campo antigo
     saveSettings();
+    updateQuotaHint();
   });
   document.getElementById("autoRefreshToggle").addEventListener("change", (e) => {
     settings.autoRefresh = e.target.checked;
