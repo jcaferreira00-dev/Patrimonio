@@ -1,4 +1,4 @@
-const CACHE_NAME = "patrimonio-cache-v4";
+const CACHE_NAME = "patrimonio-cache-v5";
 const ASSETS = [
   "./index.html",
   "./styles.css",
@@ -27,9 +27,16 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
-  // Nunca cachear chamadas de cotação (brapi/coingecko) - sempre buscar da rede
+  // Nunca interceptar chamadas externas de dados/sync (cotações e Firebase) - sempre ir direto pra rede
   const url = event.request.url;
-  if (url.includes("brapi.dev") || url.includes("coingecko.com")) {
+  const isExternalDataCall =
+    url.includes("brapi.dev") ||
+    url.includes("coingecko.com") ||
+    url.includes("googleapis.com") ||
+    url.includes("firebaseapp.com") ||
+    url.includes("firebaseio.com") ||
+    url.includes("gstatic.com");
+  if (isExternalDataCall) {
     event.respondWith(fetch(event.request));
     return;
   }

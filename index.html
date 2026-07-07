@@ -176,9 +176,22 @@
     </div>
 
     <div class="settings-group">
+      <div class="settings-label">Conta e sincronização</div>
+      <div class="settings-hint" id="accountInfo">Não conectado — seus dados ficam só neste dispositivo.</div>
+      <div class="settings-actions" style="margin-top:8px">
+        <button class="btn btn-secondary" id="googleSignInBtn" type="button">Entrar com Google</button>
+        <button class="btn btn-secondary" id="signOutBtn" type="button" hidden>Sair da conta</button>
+      </div>
+      <div class="settings-hint" id="syncStatus" style="margin-top:6px"></div>
+      <div class="settings-hint" style="margin-top:6px">
+        No primeiro login em um novo aparelho, se já houver dados na nuvem, eles substituem os dados salvos localmente.
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <div class="settings-label">Tema</div>
       <div class="settings-row">
         <div>
-          <div class="settings-label">Tema</div>
           <div class="settings-hint">Escuro ou claro</div>
         </div>
         <div class="theme-toggle" id="themeToggle">
@@ -224,6 +237,6 @@
   </div>
 </div>
 
-<script src="app.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>

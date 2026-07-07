@@ -1,3 +1,30 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged,
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  onSnapshot,
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCQBwZU8NK9YTGrnI-1-XDUhRGcmn3vMHs",
+  authDomain: "ajuste-financeiro.firebaseapp.com",
+  projectId: "ajuste-financeiro",
+  storageBucket: "ajuste-financeiro.firebasestorage.app",
+  messagingSenderId: "1084264963597",
+  appId: "1:1084264963597:web:3cb62b10985a3bccd1bf44",
+};
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const db = getFirestore(firebaseApp);
+
 (() => {
   "use strict";
 
@@ -98,9 +125,11 @@
   function saveState() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
     catch (e) { showToast("Não consegui salvar agora."); }
+    schedulePush();
   }
   function saveSettings() {
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+    schedulePush();
   }
   function getCollapse() {
     try { return JSON.parse(localStorage.getItem(COLLAPSE_KEY) || "{}"); } catch (e) { return {}; }
@@ -117,6 +146,109 @@
     clearTimeout(showToast._t);
     showToast._t = setTimeout(() => { el.hidden = true; }, ms);
   }
+
+  // ---------- sincronização (Firebase Auth + Firestore) ----------
+  let currentUser = null;
+  let unsubscribeSnapshot = null;
+  let applyingRemoteUpdate = false; // evita reenviar pra nuvem um dado que acabou de chegar dela
+  let pushTimer = null;
+  let hasSyncedOnce = false; // evita disparar push antes do primeiro snapshot chegar
+
+  function userDocRef(uid) {
+    return doc(db, "patrimonio_usuarios", uid);
+  }
+
+  function updateAccountUI() {
+    const info = document.getElementById("accountInfo");
+    const signInBtn = document.getElementById("googleSignInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    if (!info || !signInBtn || !signOutBtn) return;
+    if (currentUser) {
+      info.textContent = `Conectado como ${currentUser.email}`;
+      signInBtn.hidden = true;
+      signOutBtn.hidden = false;
+    } else {
+      info.textContent = "Não conectado — seus dados ficam só neste dispositivo.";
+      signInBtn.hidden = false;
+      signOutBtn.hidden = true;
+    }
+  }
+
+  function updateSyncStatus(msg) {
+    const el = document.getElementById("syncStatus");
+    if (el) el.textContent = msg;
+  }
+
+  function schedulePush() {
+    if (!currentUser || !hasSyncedOnce || applyingRemoteUpdate) return;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(pushToCloud, 800);
+  }
+
+  async function pushToCloud() {
+    if (!currentUser) return;
+    try {
+      updateSyncStatus("Sincronizando...");
+      await setDoc(userDocRef(currentUser.uid), { state, settings, updatedAt: Date.now() });
+      const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      updateSyncStatus(`Sincronizado às ${now}.`);
+    } catch (e) {
+      updateSyncStatus("Não consegui sincronizar agora. Verifique sua conexão.");
+    }
+  }
+
+  function startSync(user) {
+    currentUser = user;
+    hasSyncedOnce = false;
+    updateAccountUI();
+    updateSyncStatus("Conectando à nuvem...");
+    if (unsubscribeSnapshot) unsubscribeSnapshot();
+    unsubscribeSnapshot = onSnapshot(
+      userDocRef(user.uid),
+      (snap) => {
+        if (!snap.exists()) {
+          // primeira vez desse usuário na nuvem: sobe o que já existe neste dispositivo
+          hasSyncedOnce = true;
+          pushToCloud();
+          return;
+        }
+        const data = snap.data();
+        applyingRemoteUpdate = true;
+        if (data.state) state = Object.assign({ investments: [], debts: [], properties: [], receivables: [] }, data.state);
+        if (data.settings) settings = Object.assign(settings, data.settings);
+        saveState();
+        saveSettings();
+        render();
+        applyTheme();
+        updateQuotaHintSafe();
+        const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+        updateSyncStatus(`Sincronizado às ${now}.`);
+        applyingRemoteUpdate = false;
+        hasSyncedOnce = true;
+      },
+      () => {
+        updateSyncStatus("Não consegui sincronizar agora. Verifique sua conexão.");
+      }
+    );
+  }
+
+  function stopSync() {
+    if (unsubscribeSnapshot) unsubscribeSnapshot();
+    unsubscribeSnapshot = null;
+    currentUser = null;
+    hasSyncedOnce = false;
+    updateAccountUI();
+    updateSyncStatus("");
+  }
+
+  function updateQuotaHintSafe() {
+    if (typeof updateQuotaHint === "function") updateQuotaHint();
+  }
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) startSync(user);
+    else stopSync();
+  });
 
   // ---------- theme ----------
   function applyTheme() {
@@ -849,6 +981,22 @@
     saveSettings(); applyTheme();
   });
 
+  document.getElementById("googleSignInBtn").addEventListener("click", async () => {
+    try {
+      await signInWithPopup(auth, new GoogleAuthProvider());
+    } catch (e) {
+      showToast("Não consegui entrar com Google agora.");
+    }
+  });
+  document.getElementById("signOutBtn").addEventListener("click", async () => {
+    try {
+      await signOut(auth);
+      showToast("Você saiu da conta. Os dados continuam salvos neste dispositivo.");
+    } catch (e) {
+      showToast("Não consegui sair da conta agora.");
+    }
+  });
+
   document.getElementById("brapiTokens").addEventListener("change", (e) => {
     settings.brapiTokens = e.target.value
       .split(/[\n,]/)
@@ -977,6 +1125,7 @@
   loadState();
   applyTheme();
   render();
+  updateAccountUI();
   if (settings.autoRefresh) {
     refreshAllQuotes().catch(() => {});
   }
