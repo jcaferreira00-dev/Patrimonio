@@ -31,7 +31,10 @@
       <h1 class="display">Patrimônio</h1>
     </div>
     <div class="topbar-actions">
-      <button class="gear-btn" id="toggleAllBtn" title="Recolher tudo" aria-label="Recolher tudo">⌃</button>
+      <button class="gear-btn" id="toggleAllBtn" title="Recolher tudo" aria-label="Recolher tudo">
+        <svg class="chevron" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="gear-btn" id="toggleValuesBtn" title="Ocultar valores" aria-label="Ocultar valores"></button>
       <button class="gear-btn" id="openSettings" aria-label="Configurações">⚙️</button>
     </div>
   </header>
@@ -40,7 +43,7 @@
 
   <main class="container" id="cards">
     <!-- Card: Patrimônio líquido -->
-    <section class="card hero-card">
+    <section class="card hero-card" id="heroCard">
       <div class="net-worth">
         <div class="eyebrow">Patrimônio líquido</div>
         <div class="value display" id="netWorthValue">R$ 0,00</div>
@@ -90,7 +93,12 @@
       <summary>
         <span class="card-title">📊 Investimentos</span>
         <span class="card-total mono" id="investmentsGroupTotal"></span>
-        <svg class="chevron" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="trailing-icons">
+          <button class="mini-toggle-btn" id="toggleInvestmentsSub" type="button" title="Recolher categorias">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M7 15l5 5 5-5M7 9l5-5 5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <svg class="chevron" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
       </summary>
       <div class="card-body">
         <div id="investmentCards"></div>
@@ -102,7 +110,12 @@
       <summary>
         <span class="card-title">💳 Dívidas</span>
         <span class="card-total mono" id="debtsGroupTotal"></span>
-        <svg class="chevron" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="trailing-icons">
+          <button class="mini-toggle-btn" id="toggleDebtsSub" type="button" title="Recolher categorias">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M7 15l5 5 5-5M7 9l5-5 5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <svg class="chevron" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
       </summary>
       <div class="card-body">
         <div id="debtCards"></div>
@@ -114,7 +127,9 @@
       <summary>
         <span class="card-title">💰 Pessoas que me devem</span>
         <span class="card-total mono" id="receivablesCardTotal"></span>
-        <svg class="chevron" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="trailing-icons">
+          <svg class="chevron" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
       </summary>
       <div class="card-body">
         <div id="receivablesList"></div>
@@ -127,7 +142,9 @@
       <summary>
         <span class="card-title">🏠 Imóveis</span>
         <span class="card-total mono" id="propertiesCardTotal"></span>
-        <svg class="chevron" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="trailing-icons">
+          <svg class="chevron" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
       </summary>
       <div class="card-body">
         <div id="propertiesList"></div>
@@ -174,15 +191,12 @@
     <div class="settings-group">
       <div class="settings-label">Cotações em tempo real</div>
       <div class="field">
-        <label>Tokens da brapi.dev (um por linha — quanto mais tokens, mais ações por dia)</label>
-        <textarea id="brapiTokens" rows="3" placeholder="Cole aqui 1 ou mais tokens gratuitos, um por linha"></textarea>
+        <label>Token da brapi.dev (opcional, para ações/FIIs além dos tickers de teste)</label>
+        <input type="text" id="brapiToken" placeholder="Cole seu token gratuito aqui" />
       </div>
       <div class="settings-hint">
-        Crie tokens grátis em <span class="mono">brapi.dev/dashboard</span> (pode criar mais de uma conta). O plano gratuito
-        permite ~5 requisições por dia por token e 1 ação por requisição. Com várias ações cadastradas, o app atualiza
-        algumas por vez em fila e continua de onde parou no dia seguinte.
+        Crie um token grátis em <span class="mono">brapi.dev/dashboard</span>. Sem token, só funcionam PETR4, VALE3, MGLU3 e ITUB4.
       </div>
-      <div class="settings-hint" id="quotaHint"></div>
       <div class="settings-row" style="margin-top:10px">
         <div>
           <div class="settings-label">Atualizar automaticamente</div>
