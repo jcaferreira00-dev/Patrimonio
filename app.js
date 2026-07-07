@@ -985,7 +985,8 @@ const db = getFirestore(firebaseApp);
     try {
       await signInWithPopup(auth, new GoogleAuthProvider());
     } catch (e) {
-      showToast("Não consegui entrar com Google agora.");
+      console.error("Erro no login com Google:", e);
+      showToast(`Não consegui entrar com Google agora (${e.code || e.message || "erro desconhecido"}).`, 8000);
     }
   });
   document.getElementById("signOutBtn").addEventListener("click", async () => {
@@ -993,7 +994,8 @@ const db = getFirestore(firebaseApp);
       await signOut(auth);
       showToast("Você saiu da conta. Os dados continuam salvos neste dispositivo.");
     } catch (e) {
-      showToast("Não consegui sair da conta agora.");
+      console.error("Erro ao sair da conta:", e);
+      showToast(`Não consegui sair da conta agora (${e.code || e.message || "erro desconhecido"}).`, 8000);
     }
   });
 

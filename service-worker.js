@@ -1,4 +1,4 @@
-const CACHE_NAME = "patrimonio-cache-v5";
+const CACHE_NAME = "patrimonio-cache-v6";
 const ASSETS = [
   "./index.html",
   "./styles.css",
